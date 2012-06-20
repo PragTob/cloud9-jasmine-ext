@@ -2,14 +2,17 @@
 (function() {
 
   define(function(require, exports, module) {
-    var DIVIDER_POSITION, MENU_ENTRY_POSITION, commands, ext, ide, menus, noderunner;
+    var DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, commands, ext, fs, ide, menus, noderunner, panels;
     ide = require('core/ide');
     ext = require('core/ext');
     menus = require('ext/menus/menus');
     noderunner = require('ext/noderunner/noderunner');
-    commands = require("ext/commands/commands");
+    commands = require('ext/commands/commands');
+    fs = require('ext/filesystem/filesystem');
+    panels = require('ext/panels/panels');
     DIVIDER_POSITION = 2300;
     MENU_ENTRY_POSITION = 2400;
+    PANEL_POSITION = 10000;
     return ext.register('ext/jasmine/jasmine', {
       name: 'Jasmine',
       dev: 'Tobias Metzke, Tobias Pfeiffer',
@@ -41,6 +44,11 @@
           command: "jasmine"
         }), MENU_ENTRY_POSITION));
         this.hotitems['jasmine'] = [this.nodes[1]];
+        return panels.register(this, {
+          position: PANEL_POSITION,
+          caption: "Jasmine",
+          "class": "testing"
+        });
       },
       jasmine: function() {
         console.log("Jasmine starts to run");

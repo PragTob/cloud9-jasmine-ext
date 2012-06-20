@@ -3,10 +3,13 @@ define (require, exports, module) ->
   ext = require 'core/ext'
   menus = require 'ext/menus/menus'
   noderunner = require 'ext/noderunner/noderunner'
-  commands = require "ext/commands/commands"
+  commands = require 'ext/commands/commands'
+  fs = require 'ext/filesystem/filesystem'
+  panels = require 'ext/panels/panels'
 
   DIVIDER_POSITION = 2300
   MENU_ENTRY_POSITION = 2400
+  PANEL_POSITION = 10000
 
   return ext.register 'ext/jasmine/jasmine',
     name: 'Jasmine'
@@ -31,7 +34,11 @@ define (require, exports, module) ->
       @nodes.push menus.addItemByPath("Edit/Jasmine", new apf.item({command: "jasmine"}), MENU_ENTRY_POSITION)
 
       @hotitems['jasmine'] = [@nodes[1]]
-      return
+      
+      panels.register this, 
+        position : PANEL_POSITION,
+        caption: "Jasmine",
+        "class": "testing"
 
     jasmine: ->
       console.log "Jasmine starts to run"
