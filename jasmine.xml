@@ -27,7 +27,7 @@
                 
                 <a:splitbutton id="btnTestRun"
                   caption  = "Run tests"
-                  onclick  = "require('ext/testpanel/testpanel').run(dgTestProject.getSelection());"
+                  onclick  = "require('ext/jasmine/jasmine').run(dgTestProject.getSelection());"
                   submenu  = "mnuRunSettings" 
                   visible  = "{!(stTestRun.active || !dgTestProject.selected)}" />
                 <a:button id="btnTestStop"
@@ -120,7 +120,7 @@
                       Remove could be test and assert
             -->
             <a:menu id="mnuTestContext">
-                <a:item match="[test|file|repo[file]]" onclick="require('ext/testpanel/testpanel').run()">Run Tests</a:item>
+                <a:item match="[test|file|repo[file]]" onclick="require('ext/jasmine/jasmine').run(dgTestProject.getSelection())">Run Tests</a:item>
                 <a:item match="[file]" 
                   onclick="var ide = require('core/ide');ide.dispatchEvent('openfile', {doc: ide.createDocument(dgTestProject.selected)});">Edit</a:item>
                 <a:divider />

@@ -13,7 +13,7 @@ define (require, exports, module) ->
   MENU_ENTRY_POSITION = 2400
   PANEL_POSITION = 10000
 
-  return ext.register 'ext/jasmine/jasmine',
+  module.exports = ext.register 'ext/jasmine/jasmine',
     name: 'Jasmine'
     dev: 'Tobias Metzke, Tobias Pfeiffer'
     type: ext.GENERAL
@@ -108,6 +108,19 @@ define (require, exports, module) ->
       @nodes = []
       
       panels.unregister(@)
+      
+    run: (nodes) ->
+      console.log "noddeesss"
+      console.log nodes
+      fileNames = "("
+      nodes.each (node) ->
+        name = node.getAttribute('name')
+        name = name[0...name.indexOf('.')]
+        fileNames += name + '|'
+      
+      fileNames = fileNames[0...-1] + ')'
+      noderunner.run('node_modules/jasmine-node/lib/jasmine-node/cli.js', ['--coffee', "-m \"#{fileNames}\.\"", 'spec/' ], false)
+      
         
         
 

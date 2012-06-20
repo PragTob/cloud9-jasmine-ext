@@ -15,7 +15,7 @@
     DIVIDER_POSITION = 2300;
     MENU_ENTRY_POSITION = 2400;
     PANEL_POSITION = 10000;
-    return ext.register('ext/jasmine/jasmine', {
+    return module.exports = ext.register('ext/jasmine/jasmine', {
       name: 'Jasmine',
       dev: 'Tobias Metzke, Tobias Pfeiffer',
       type: ext.GENERAL,
@@ -125,6 +125,20 @@
         });
         this.nodes = [];
         return panels.unregister(this);
+      },
+      run: function(nodes) {
+        var fileNames;
+        console.log("noddeesss");
+        console.log(nodes);
+        fileNames = "(";
+        nodes.each(function(node) {
+          var name;
+          name = node.getAttribute('name');
+          name = name.slice(0, name.indexOf('.'));
+          return fileNames += name + '|';
+        });
+        fileNames = fileNames.slice(0, -1) + ')';
+        return noderunner.run('node_modules/jasmine-node/lib/jasmine-node/cli.js', ['--coffee', "-m \"" + fileNames + "\.\"", 'spec/'], false);
       },
       jasmine: function() {
         console.log("Jasmine starts to run");
