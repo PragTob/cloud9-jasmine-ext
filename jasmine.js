@@ -74,12 +74,9 @@
           if (state !== apf.SUCCESS) {
             return;
           }
-          console.log("DATAAAAAAAA: " + data);
           sanitizedData = data.replace(/^\./gm, "");
           sanitizedData = sanitizedData.replace(/^\/node_modules\/.*/gm, "");
-          console.log("replace: " + sanitizedData);
           specs = sanitizedData.match(/^.*\.spec\.(js|coffee)$/gm);
-          console.log("SPEEEEECCCSSSSS " + specs);
           return _this.addFiles(specs, mdlTests.queryNode("repo[1]"));
         });
       },
@@ -138,11 +135,11 @@
           return fileNames += name + '|';
         });
         fileNames = fileNames.slice(0, -1) + ')';
-        return noderunner.run('node_modules/jasmine-node/lib/jasmine-node/cli.js', ['--coffee', "-m \"" + fileNames + "\.\"", 'spec/'], false);
+        return noderunner.run('node_modules/jasmine-node/lib/jasmine-node/cli.js', ['--coffee', '-m', "" + fileNames + "\\.", 'spec/'], false);
       },
       jasmine: function() {
         console.log("Jasmine starts to run");
-        return noderunner.run('node_modules/jasmine-node/lib/jasmine-node/cli.js', ['--coffee', '-m "(itemStorage|server)\."', 'spec/'], false);
+        return noderunner.run('node_modules/jasmine-node/lib/jasmine-node/cli.js', ['--coffee', '-m', "(itemStorage|server)\\.", 'spec/'], false);
       }
     });
   });

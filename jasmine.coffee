@@ -63,12 +63,9 @@ define (require, exports, module) ->
       console.log "initFilelist"
       filelist.getFileList false, (data, state) =>
         return if (state != apf.SUCCESS)
-        console.log "DATAAAAAAAA: " + data
         sanitizedData = data.replace(/^\./gm, "")
         sanitizedData = sanitizedData.replace(/^\/node_modules\/.*/gm, "")
-        console.log "replace: " + sanitizedData
         specs = sanitizedData.match(/^.*\.spec\.(js|coffee)$/gm)
-        console.log("SPEEEEECCCSSSSS " + specs)
         @addFiles(specs, mdlTests.queryNode("repo[1]"))
     
     addFiles: (specs, parent) -> 
@@ -119,11 +116,11 @@ define (require, exports, module) ->
         fileNames += name + '|'
       
       fileNames = fileNames[0...-1] + ')'
-      noderunner.run('node_modules/jasmine-node/lib/jasmine-node/cli.js', ['--coffee', "-m \"#{fileNames}\.\"", 'spec/' ], false)
+      noderunner.run('node_modules/jasmine-node/lib/jasmine-node/cli.js', ['--coffee', '-m', "#{fileNames}\\.", 'spec/' ], false)
       
         
         
 
     jasmine: ->
       console.log "Jasmine starts to run"
-      noderunner.run('node_modules/jasmine-node/lib/jasmine-node/cli.js', ['--coffee', '-m "(itemStorage|server)\."', 'spec/' ], false)
+      noderunner.run('node_modules/jasmine-node/lib/jasmine-node/cli.js', ['--coffee', '-m', "(itemStorage|server)\\.", 'spec/' ], false)
