@@ -2,7 +2,7 @@
 (function() {
 
   define(function(require, exports, module) {
-    var DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, commands, ext, fs, ide, markup, menus, noderunner, panels;
+    var DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, commands, ext, filelist, fs, ide, markup, menus, noderunner, panels;
     ide = require('core/ide');
     ext = require('core/ext');
     menus = require('ext/menus/menus');
@@ -11,6 +11,7 @@
     fs = require('ext/filesystem/filesystem');
     panels = require('ext/panels/panels');
     markup = require('text!ext/jasmine/jasmine.xml');
+    filelist = require('ext/filelist/filelist');
     DIVIDER_POSITION = 2300;
     MENU_ENTRY_POSITION = 2400;
     PANEL_POSITION = 10000;
@@ -61,7 +62,39 @@
         _self = this;
         this.panel = winTestPanel;
         this.nodes.push(winTestPanel, mnuRunSettings, stTestRun);
-        return ide.dispatchEvent("init.jasmine");
+        ide.dispatchEvent("init.jasmine");
+        console.log("after init.jasmine");
+        return this.initFilelist();
+      },
+      initFilelist: function() {
+        var _this = this;
+        console.log("initFilelist");
+        return filelist.getFileList(false, function(data, state) {
+          var sanitizedData, specs;
+          if (state !== apf.SUCCESS) {
+            return;
+          }
+          console.log("DATAAAAAAAA: " + data);
+          sanitizedData = data.replace(/^\./gm, "");
+          sanitizedData = sanitizedData.replace(/^\/node_modules\/.*/gm, "");
+          console.log("replace: " + sanitizedData);
+          specs = sanitizedData.match(/^.*\.spec\.(js|coffee)$/gm);
+          console.log("SPEEEEECCCSSSSS " + specs);
+          return _this.addFiles(specs, mdlTests.queryNode("repo[1]"));
+        });
+      },
+      addFiles: function(specs, parent) {
+        var xmlFiles;
+        console.log("addFiles");
+        xmlFiles = "";
+        specs.each(function(spec) {
+          return xmlFiles += "<file path='" + apf.escapeXML(ide.davPrefix + spec) + "' name='" + apf.escapeXML(spec.split("/").pop()) + "' type='jasmine' />";
+        });
+        console.log("xmlFiles");
+        console.log(xmlFiles);
+        return mdlTests.insert("<files>" + xmlFiles + "</files>", {
+          insertPoint: parent
+        });
       },
       show: function() {
         if ((navbar.current != null) && (navbar.current !== this)) {

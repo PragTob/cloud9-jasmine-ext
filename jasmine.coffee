@@ -7,6 +7,7 @@ define (require, exports, module) ->
   fs = require 'ext/filesystem/filesystem'
   panels = require 'ext/panels/panels'
   markup = require 'text!ext/jasmine/jasmine.xml'
+  filelist = require 'ext/filelist/filelist'
 
   DIVIDER_POSITION = 2300
   MENU_ENTRY_POSITION = 2400
@@ -49,12 +50,39 @@ define (require, exports, module) ->
       btnTestStop.$ext.setAttribute("class", btnTestStop.$ext.getAttribute("class") + " btnTestStop")
       winTestPanel.$ext.setAttribute("class", winTestPanel.$ext.getAttribute("class") + " testpanel")
 
-      _self  = @
+      _self = @
       
       @panel = winTestPanel
       @nodes.push(winTestPanel, mnuRunSettings, stTestRun)
       
-      ide.dispatchEvent("init.jasmine")
+      ide.dispatchEvent "init.jasmine"
+      console.log "after init.jasmine"
+      @initFilelist()
+      
+    initFilelist: ->
+      console.log "initFilelist"
+      filelist.getFileList false, (data, state) =>
+        return if (state != apf.SUCCESS)
+        console.log "DATAAAAAAAA: " + data
+        sanitizedData = data.replace(/^\./gm, "")
+        sanitizedData = sanitizedData.replace(/^\/node_modules\/.*/gm, "")
+        console.log "replace: " + sanitizedData
+        specs = sanitizedData.match(/^.*\.spec\.(js|coffee)$/gm)
+        console.log("SPEEEEECCCSSSSS " + specs)
+        @addFiles(specs, mdlTests.queryNode("repo[1]"))
+    
+    addFiles: (specs, parent) -> 
+      console.log "addFiles"
+      xmlFiles = ""
+      specs.each (spec) ->
+        xmlFiles += "<file path='" +
+              apf.escapeXML(ide.davPrefix + spec) +
+              "' name='" + apf.escapeXML(spec.split("/").pop()) + 
+              "' type='jasmine' />"
+      
+      console.log "xmlFiles"        
+      console.log xmlFiles
+      mdlTests.insert "<files>" + xmlFiles + "</files>", {insertPoint : parent}
       
     show: ->
       if (navbar.current?) && (navbar.current != this)

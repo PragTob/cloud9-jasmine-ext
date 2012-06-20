@@ -69,7 +69,7 @@
         <a:vbox anchors = "0 0 0 0" id="vboxTestPanel" style="background:#333">
             <a:model id="mdlTests">
                 <data>
-                    <repo name="Cloud9">
+                    <repo name="Your Project">
                     
                     </repo>
                 </data>
