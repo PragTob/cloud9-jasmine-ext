@@ -2,7 +2,7 @@
 (function() {
 
   define(function(require, exports, module) {
-    var DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, commands, ext, fs, ide, menus, noderunner, panels;
+    var DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, commands, ext, fs, ide, markup, menus, noderunner, panels;
     ide = require('core/ide');
     ext = require('core/ext');
     menus = require('ext/menus/menus');
@@ -10,6 +10,7 @@
     commands = require('ext/commands/commands');
     fs = require('ext/filesystem/filesystem');
     panels = require('ext/panels/panels');
+    markup = require('text!ext/jasmine/jasmine.xml');
     DIVIDER_POSITION = 2300;
     MENU_ENTRY_POSITION = 2400;
     PANEL_POSITION = 10000;
@@ -24,10 +25,17 @@
         }
       },
       hotitems: {},
+      markup: markup,
       nodes: [],
       hook: function() {
         var _self;
         _self = this;
+        this.markupInsertionPoint = colLeft;
+        panels.register(this, {
+          position: PANEL_POSITION,
+          caption: "Jasmine",
+          "class": "testing"
+        });
         commands.addCommand({
           name: "jasmine",
           hint: "run your specs with jasmine",
@@ -43,12 +51,47 @@
         this.nodes.push(menus.addItemByPath("Edit/Jasmine", new apf.item({
           command: "jasmine"
         }), MENU_ENTRY_POSITION));
-        this.hotitems['jasmine'] = [this.nodes[1]];
-        return panels.register(this, {
-          position: PANEL_POSITION,
-          caption: "Jasmine",
-          "class": "testing"
+        return this.hotitems['jasmine'] = [this.nodes[1]];
+      },
+      init: function() {
+        var _self;
+        btnTestRun.$ext.setAttribute("class", "light-dropdown");
+        btnTestStop.$ext.setAttribute("class", btnTestStop.$ext.getAttribute("class") + " btnTestStop");
+        winTestPanel.$ext.setAttribute("class", winTestPanel.$ext.getAttribute("class") + " testpanel");
+        _self = this;
+        this.panel = winTestPanel;
+        this.nodes.push(winTestPanel, mnuRunSettings, stTestRun);
+        return ide.dispatchEvent("init.jasmine");
+      },
+      show: function() {
+        if ((navbar.current != null) && (navbar.current !== this)) {
+          navbar.current.disable();
+        } else {
+          return;
+        }
+        panels.initPanel(this);
+        return this.enable();
+      },
+      enable: function() {
+        return this.nodes.each(function(item) {
+          if (item.enable) {
+            return item.enable();
+          }
         });
+      },
+      disable: function() {
+        return this.nodes.each(function(item) {
+          if (item.disable) {
+            return item.disable();
+          }
+        });
+      },
+      destroy: function() {
+        this.nodes.each(function(item) {
+          return item.destroy(true, true);
+        });
+        this.nodes = [];
+        return panels.unregister(this);
       },
       jasmine: function() {
         console.log("Jasmine starts to run");

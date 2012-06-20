@@ -6,6 +6,7 @@ define (require, exports, module) ->
   commands = require 'ext/commands/commands'
   fs = require 'ext/filesystem/filesystem'
   panels = require 'ext/panels/panels'
+  markup = require 'text!ext/jasmine/jasmine.xml'
 
   DIVIDER_POSITION = 2300
   MENU_ENTRY_POSITION = 2400
@@ -19,9 +20,17 @@ define (require, exports, module) ->
     commands:
       'jasmine': hint: 'Run your tests with jasmine!'
     hotitems : {}
+    markup: markup
     nodes: []
     hook: () ->
       _self = @
+      
+      @markupInsertionPoint = colLeft
+      panels.register this, 
+        position : PANEL_POSITION,
+        caption: "Jasmine",
+        "class": "testing"
+      
       commands.addCommand(
         name: "jasmine"
         hint: "run your specs with jasmine"
@@ -35,10 +44,44 @@ define (require, exports, module) ->
 
       @hotitems['jasmine'] = [@nodes[1]]
       
-      panels.register this, 
-        position : PANEL_POSITION,
-        caption: "Jasmine",
-        "class": "testing"
+    init: ->
+      btnTestRun.$ext.setAttribute("class", "light-dropdown")
+      btnTestStop.$ext.setAttribute("class", btnTestStop.$ext.getAttribute("class") + " btnTestStop")
+      winTestPanel.$ext.setAttribute("class", winTestPanel.$ext.getAttribute("class") + " testpanel")
+
+      _self  = @
+      
+      @panel = winTestPanel
+      @nodes.push(winTestPanel, mnuRunSettings, stTestRun)
+      
+      ide.dispatchEvent("init.jasmine")
+      
+    show: ->
+      if (navbar.current?) && (navbar.current != this)
+        navbar.current.disable()
+      else
+        return
+      
+      panels.initPanel(@)
+      @enable()
+      
+    enable: ->
+      @nodes.each (item) ->
+        item.enable() if item.enable
+        
+    disable: ->
+      @nodes.each (item) ->
+        item.disable() if item.disable
+        
+    destroy: ->
+      # stop
+      
+      @nodes.each (item) -> item.destroy true, true
+      @nodes = []
+      
+      panels.unregister(@)
+        
+        
 
     jasmine: ->
       console.log "Jasmine starts to run"
