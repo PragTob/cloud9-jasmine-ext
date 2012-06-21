@@ -166,5 +166,4 @@ define (require, exports, module) ->
       console.log @message
         
 
-    jasmine: ->
-      @runJasmine()
+    jasmine: -> @runJasmine()
