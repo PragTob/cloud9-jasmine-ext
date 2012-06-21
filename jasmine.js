@@ -167,7 +167,26 @@
           matchString = matchString.slice(0, -1) + ')' + "\\.";
           args.push('--match', matchString);
         }
+        this.registerSocketListener();
         return noderunner.run(PATH_TO_JASMINE, args, false);
+      },
+      registerSocketListener: function() {
+        var _this = this;
+        this.message = '';
+        return ide.addEventListener('socketMessage', function(event) {
+          if (event.message.type === 'node-data') {
+            _this.assembleMessage(event.message.data);
+          }
+          if (event.message.type === 'node-exit') {
+            return _this.parseMessage();
+          }
+        });
+      },
+      assembleMessage: function(message) {
+        return this.message += message;
+      },
+      parseMessage: function() {
+        return console.log(this.message);
       },
       jasmine: function() {
         return this.runJasmine();

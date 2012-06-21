@@ -1,3 +1,6 @@
+# rubular funktionierender RegEx (für einen): /Failures:.*\d+\).*Stacktrace:.*?CoffeeRecommender\/(.*?)\)/
+# failure messages: /Failures:.(.*)/
+
 define (require, exports, module) ->
   ide = require 'core/ide'
   ext = require 'core/ext'
@@ -147,8 +150,20 @@ define (require, exports, module) ->
         # replace last | with ) to complete the Regex
         matchString = matchString[0...-1] + ')' + "\\."
         args.push '--match', matchString
-        
+      
+      @registerSocketListener()
       noderunner.run(PATH_TO_JASMINE, args, false)    
+      
+    registerSocketListener: ->
+      @message = '' # neuer Socket Listener, neue Message
+      ide.addEventListener 'socketMessage', (event) =>
+        @assembleMessage(event.message.data) if event.message.type == 'node-data'
+        @parseMessage() if event.message.type == 'node-exit'
+        
+    assembleMessage: (message) -> @message += message
+    
+    parseMessage: ->
+      console.log @message
         
 
     jasmine: ->
