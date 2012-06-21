@@ -53,6 +53,9 @@ define (require, exports, module) ->
       @nodes.push menus.addItemByPath("Edit/Jasmine", new apf.item({command: "jasmine"}), MENU_ENTRY_POSITION)
 
       @hotitems['jasmine'] = [@nodes[1]]
+      @projectName = @getProjectName()
+      console.log @projectName
+      
       
     init: ->
       buttonTestRunJasmine.$ext.setAttribute("class", "light-dropdown")
@@ -71,7 +74,6 @@ define (require, exports, module) ->
       
     # bad bad hack, Cloud9 danke.
     setRepoName: ->
-      @projectName = @getProjectName()
       modelTestsJasmine.data.childNodes[1].setAttribute 'name', @projectName
       
     initFilelist: ->
@@ -164,6 +166,43 @@ define (require, exports, module) ->
     
     parseMessage: ->
       console.log @message
+      failureMessages = @message.match /Failures:\s([\s\S]*)\n+Finished/m
+      if failureMessages?
+        @handleFailures failureMessages
+      else
+        @allSpecsPass()
+        
+    handleFailures: (failureMessages) ->
+      # separate failures are divided by an empty line
+      failures = failureMessages[1].split "\n\n"
+      failures.each (failure) => @parseFailure(failure)
+      
+    parseFailure: (failure) ->
+      matches = failure.match /Message:\s([\s\S]+?)Stacktrace:[\s\S]*?(at[\s\S]*)/m
+      message = matches[1]
+      stacktrace = matches[2]
+      console.log "Messageeeeeeeeeeeee:"
+      console.log message
+      console.log "Stacktrace:"
+      console.log stacktrace
+      errorLine = @parseStackTrace(stacktrace)
+      console.log errorLine
+      
+    parseStackTrace: (stacktrace) ->
+      traces = stacktrace.split "\n"
+      error = ''
+      traces.each (trace) =>
+        if (trace.indexOf('node_modules') == -1) && (trace.indexOf(@projectName) >= 0)
+          error = trace.match(new RegExp(@projectName + '(.+)'))[1]
+          error = error[0...-1] # remove the last character - \) didn't seem to work in the RegEx
+          lol = error
+          return error
+          
+      error
+      
+    
+    allSpecsPass: ->
+      # yaaaaaaaaaaaaaaaay
         
 
     jasmine: -> @runJasmine()

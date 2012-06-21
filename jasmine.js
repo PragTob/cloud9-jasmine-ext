@@ -56,7 +56,9 @@
         this.nodes.push(menus.addItemByPath("Edit/Jasmine", new apf.item({
           command: "jasmine"
         }), MENU_ENTRY_POSITION));
-        return this.hotitems['jasmine'] = [this.nodes[1]];
+        this.hotitems['jasmine'] = [this.nodes[1]];
+        this.projectName = this.getProjectName();
+        return console.log(this.projectName);
       },
       init: function() {
         var _self;
@@ -72,7 +74,6 @@
         return this.afterFileSave();
       },
       setRepoName: function() {
-        this.projectName = this.getProjectName();
         return modelTestsJasmine.data.childNodes[1].setAttribute('name', this.projectName);
       },
       initFilelist: function() {
@@ -186,8 +187,52 @@
         return this.message += message;
       },
       parseMessage: function() {
-        return console.log(this.message);
+        var failureMessages;
+        console.log(this.message);
+        failureMessages = this.message.match(/Failures:\s([\s\S]*)\n+Finished/m);
+        if (failureMessages != null) {
+          return this.handleFailures(failureMessages);
+        } else {
+          return this.allSpecsPass();
+        }
       },
+      handleFailures: function(failureMessages) {
+        var failures,
+          _this = this;
+        failures = failureMessages[1].split("\n\n");
+        return failures.each(function(failure) {
+          return _this.parseFailure(failure);
+        });
+      },
+      parseFailure: function(failure) {
+        var errorLine, matches, message, stacktrace;
+        matches = failure.match(/Message:\s([\s\S]+?)Stacktrace:[\s\S]*?(at[\s\S]*)/m);
+        message = matches[1];
+        stacktrace = matches[2];
+        console.log("Messageeeeeeeeeeeee:");
+        console.log(message);
+        console.log("Stacktrace:");
+        console.log(stacktrace);
+        errorLine = this.parseStackTrace(stacktrace);
+        return console.log(errorLine);
+      },
+      parseStackTrace: function(stacktrace) {
+        var error, traces,
+          _this = this;
+        traces = stacktrace.split("\n");
+        error = '';
+        traces.each(function(trace) {
+          var lol;
+          if ((trace.indexOf('node_modules') === -1) && (trace.indexOf(_this.projectName) >= 0)) {
+            error = trace.match(new RegExp(_this.projectName + '(.+)'))[1];
+            error = error.slice(0, -1);
+            lol = error;
+            return error;
+          }
+        });
+        return error;
+      },
+      allSpecsPass: function() {},
       jasmine: function() {
         return this.runJasmine();
       }
