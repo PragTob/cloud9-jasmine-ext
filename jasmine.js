@@ -67,8 +67,13 @@
         this.panel = windowTestPanelJasmine;
         this.nodes.push(windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine);
         ide.dispatchEvent("init.jasmine");
+        this.setRepoName();
         this.initFilelist();
         return this.afterFileSave();
+      },
+      setRepoName: function() {
+        this.projectName = this.getProjectName();
+        return modelTestsJasmine.data.childNodes[1].setAttribute('name', this.projectName);
       },
       initFilelist: function() {
         var _this = this;
@@ -100,6 +105,9 @@
           name = _this.getFileNameFrom(event.node);
           return _this.runJasmine([name]);
         });
+      },
+      getProjectName: function() {
+        return document.title.slice(0, document.title.indexOf('-') - 1);
       },
       show: function() {
         if ((navbar.current != null) && (navbar.current !== this)) {

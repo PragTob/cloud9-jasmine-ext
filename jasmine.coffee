@@ -62,8 +62,14 @@ define (require, exports, module) ->
       @nodes.push(windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine)
       
       ide.dispatchEvent "init.jasmine"
+      @setRepoName()
       @initFilelist()
       @afterFileSave()
+      
+    # bad bad hack, Cloud9 danke.
+    setRepoName: ->
+      @projectName = @getProjectName()
+      modelTestsJasmine.data.childNodes[1].setAttribute 'name', @projectName
       
     initFilelist: ->
       filelist.getFileList false, (data, state) =>
@@ -87,6 +93,9 @@ define (require, exports, module) ->
       ide.addEventListener 'afterfilesave', (event) =>
         name = @getFileNameFrom event.node
         @runJasmine [name]
+        
+    # bad bad hack, Cloud9 danke.
+    getProjectName: -> document.title[0...document.title.indexOf('-') - 1]
       
     show: ->
       if (navbar.current?) && (navbar.current != this)
