@@ -56,10 +56,11 @@ define (require, exports, module) ->
       buttonTestStopJasmine.$ext.setAttribute("class", buttonTestStopJasmine.$ext.getAttribute("class") + " buttonTestStopJasmine")
       windowTestPanelJasmine.$ext.setAttribute("class", windowTestPanelJasmine.$ext.getAttribute("class") + " testpanelJasmine")
 
-      _self = @
-      
       @panel = windowTestPanelJasmine
       @nodes.push(windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine)
+      
+      dataGridTestProjectJasmine.addEventListener 'afterchoose', =>
+      	@run dataGridTestProjectJasmine.getSelection()
       
       ide.dispatchEvent "init.jasmine"
       @setRepoName()

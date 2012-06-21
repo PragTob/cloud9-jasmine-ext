@@ -59,13 +59,15 @@
         return this.hotitems['jasmine'] = [this.nodes[1]];
       },
       init: function() {
-        var _self;
+        var _this = this;
         buttonTestRunJasmine.$ext.setAttribute("class", "light-dropdown");
         buttonTestStopJasmine.$ext.setAttribute("class", buttonTestStopJasmine.$ext.getAttribute("class") + " buttonTestStopJasmine");
         windowTestPanelJasmine.$ext.setAttribute("class", windowTestPanelJasmine.$ext.getAttribute("class") + " testpanelJasmine");
-        _self = this;
         this.panel = windowTestPanelJasmine;
         this.nodes.push(windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine);
+        dataGridTestProjectJasmine.addEventListener('afterchoose', function() {
+          return _this.run(dataGridTestProjectJasmine.getSelection());
+        });
         ide.dispatchEvent("init.jasmine");
         this.setRepoName();
         this.initFilelist();
