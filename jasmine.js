@@ -2,7 +2,7 @@
 (function() {
 
   define(function(require, exports, module) {
-    var DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, commands, ext, filelist, fs, ide, markup, menus, noderunner, panels;
+    var DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, commands, css, ext, filelist, fs, ide, markup, menus, noderunner, panels;
     ide = require('core/ide');
     ext = require('core/ext');
     menus = require('ext/menus/menus');
@@ -12,6 +12,7 @@
     panels = require('ext/panels/panels');
     markup = require('text!ext/jasmine/jasmine.xml');
     filelist = require('ext/filelist/filelist');
+    css = require("text!ext/jasmine/jasmine.css");
     DIVIDER_POSITION = 2300;
     MENU_ENTRY_POSITION = 2400;
     PANEL_POSITION = 10000;
@@ -28,14 +29,16 @@
       hotitems: {},
       markup: markup,
       nodes: [],
+      css: css,
       hook: function() {
         var _self;
+        apf.importCssString(css);
         _self = this;
         this.markupInsertionPoint = colLeft;
         panels.register(this, {
           position: PANEL_POSITION,
           caption: "Jasmine",
-          "class": "testing"
+          "class": "jasmine"
         });
         commands.addCommand({
           name: "jasmine",

@@ -8,6 +8,7 @@ define (require, exports, module) ->
   panels = require 'ext/panels/panels'
   markup = require 'text!ext/jasmine/jasmine.xml'
   filelist = require 'ext/filelist/filelist'
+  css = require "text!ext/jasmine/jasmine.css"
 
   DIVIDER_POSITION = 2300
   MENU_ENTRY_POSITION = 2400
@@ -23,14 +24,18 @@ define (require, exports, module) ->
     hotitems : {}
     markup: markup
     nodes: []
+    css: css
+    
     hook: () ->
+      apf.importCssString(css);
+      
       _self = @
       
       @markupInsertionPoint = colLeft
       panels.register this, 
         position : PANEL_POSITION,
         caption: "Jasmine",
-        "class": "testing"
+        "class": "jasmine"
       
       commands.addCommand(
         name: "jasmine"
