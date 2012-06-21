@@ -57,10 +57,16 @@ define (require, exports, module) ->
       windowTestPanelJasmine.$ext.setAttribute("class", windowTestPanelJasmine.$ext.getAttribute("class") + " testpanelJasmine")
 
       @panel = windowTestPanelJasmine
-      @nodes.push(windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine)
+      @nodes.push windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine
+      
+      _self = @
       
       dataGridTestProjectJasmine.addEventListener 'afterchoose', =>
       	@run dataGridTestProjectJasmine.getSelection()
+      	#nodes = dataGridTestProjectJasmine.getSelection()
+      	#for node in nodes
+	      #	_self.setError node, 'düdüm'
+	      # _self.setPass node, 'yay'
       
       ide.dispatchEvent "init.jasmine"
       @setRepoName()
@@ -150,7 +156,14 @@ define (require, exports, module) ->
         args.push '--match', matchString
         
       noderunner.run(PATH_TO_JASMINE, args, false)    
-        
+
+    setPass : (node, msg) ->
+        apf.xmldb.setAttribute node, "status", 1
+        apf.xmldb.setAttribute node, "status-message", msg || ""
+
+    setError : (node, msg) ->
+        apf.xmldb.setAttribute node, "status", 0
+        apf.xmldb.setAttribute node, "status-message", msg || ""
 
     jasmine: ->
       @runJasmine()

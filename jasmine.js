@@ -59,12 +59,14 @@
         return this.hotitems['jasmine'] = [this.nodes[1]];
       },
       init: function() {
-        var _this = this;
+        var _self,
+          _this = this;
         buttonTestRunJasmine.$ext.setAttribute("class", "light-dropdown");
         buttonTestStopJasmine.$ext.setAttribute("class", buttonTestStopJasmine.$ext.getAttribute("class") + " buttonTestStopJasmine");
         windowTestPanelJasmine.$ext.setAttribute("class", windowTestPanelJasmine.$ext.getAttribute("class") + " testpanelJasmine");
         this.panel = windowTestPanelJasmine;
         this.nodes.push(windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine);
+        _self = this;
         dataGridTestProjectJasmine.addEventListener('afterchoose', function() {
           return _this.run(dataGridTestProjectJasmine.getSelection());
         });
@@ -170,6 +172,14 @@
           args.push('--match', matchString);
         }
         return noderunner.run(PATH_TO_JASMINE, args, false);
+      },
+      setPass: function(node, msg) {
+        apf.xmldb.setAttribute(node, "status", 1);
+        return apf.xmldb.setAttribute(node, "status-message", msg || "");
+      },
+      setError: function(node, msg) {
+        apf.xmldb.setAttribute(node, "status", 0);
+        return apf.xmldb.setAttribute(node, "status-message", msg || "");
       },
       jasmine: function() {
         return this.runJasmine();
