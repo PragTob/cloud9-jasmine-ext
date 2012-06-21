@@ -67,13 +67,11 @@
         this.panel = windowTestPanelJasmine;
         this.nodes.push(windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine);
         ide.dispatchEvent("init.jasmine");
-        console.log("after init.jasmine");
         this.initFilelist();
         return this.afterFileSave();
       },
       initFilelist: function() {
         var _this = this;
-        console.log("initFilelist");
         return filelist.getFileList(false, function(data, state) {
           var sanitizedData, specs;
           if (state !== apf.SUCCESS) {
@@ -87,13 +85,10 @@
       },
       addFiles: function(specs, parent) {
         var xmlFiles;
-        console.log("addFiles");
         xmlFiles = "";
         specs.each(function(spec) {
           return xmlFiles += "<file path='" + apf.escapeXML(ide.davPrefix + spec) + "' name='" + apf.escapeXML(spec.split("/").pop()) + "' type='jasmine' />";
         });
-        console.log("xmlFiles");
-        console.log(xmlFiles);
         return modelTestsJasmine.insert("<files>" + xmlFiles + "</files>", {
           insertPoint: parent
         });
@@ -142,13 +137,13 @@
         return name = fullFileName.slice(0, fullFileName.indexOf('.'));
       },
       run: function(nodes) {
-        var fileNames;
-        console.log("noddeesss");
+        var fileNames,
+          _this = this;
         console.log(nodes);
         fileNames = [];
         nodes.each(function(node) {
           var name;
-          name = this.getFileNameFrom(node);
+          name = _this.getFileNameFrom(node);
           return fileNames.push(name);
         });
         return this.runJasmine(fileNames);

@@ -62,12 +62,10 @@ define (require, exports, module) ->
       @nodes.push(windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine)
       
       ide.dispatchEvent "init.jasmine"
-      console.log "after init.jasmine"
       @initFilelist()
       @afterFileSave()
       
     initFilelist: ->
-      console.log "initFilelist"
       filelist.getFileList false, (data, state) =>
         return if (state != apf.SUCCESS)
         sanitizedData = data.replace(/^\./gm, "")
@@ -76,7 +74,6 @@ define (require, exports, module) ->
         @addFiles(specs, modelTestsJasmine.queryNode("repo[1]"))
     
     addFiles: (specs, parent) -> 
-      console.log "addFiles"
       xmlFiles = ""
       specs.each (spec) ->
         xmlFiles += "<file path='" +
@@ -84,8 +81,6 @@ define (require, exports, module) ->
               "' name='" + apf.escapeXML(spec.split("/").pop()) + 
               "' type='jasmine' />"
       
-      console.log "xmlFiles"        
-      console.log xmlFiles
       modelTestsJasmine.insert "<files>" + xmlFiles + "</files>", {insertPoint : parent}
       
     afterFileSave: ->
@@ -123,10 +118,9 @@ define (require, exports, module) ->
       name = fullFileName[0...fullFileName.indexOf('.')]
       
     run: (nodes) ->
-      console.log "noddeesss"
       console.log nodes
       fileNames = []
-      nodes.each (node) ->
+      nodes.each (node) =>
         name = @getFileNameFrom node
         fileNames.push name
       
