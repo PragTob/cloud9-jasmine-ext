@@ -57,23 +57,27 @@
           command: "jasmine"
         }), MENU_ENTRY_POSITION));
         this.hotitems['jasmine'] = [this.nodes[1]];
-        this.projectName = this.getProjectName();
-        return console.log(this.projectName);
+        return this.projectName = this.getProjectName();
       },
       init: function() {
-        var _self;
+        var _self,
+          _this = this;
         buttonTestRunJasmine.$ext.setAttribute("class", "light-dropdown");
         buttonTestStopJasmine.$ext.setAttribute("class", buttonTestStopJasmine.$ext.getAttribute("class") + " buttonTestStopJasmine");
         windowTestPanelJasmine.$ext.setAttribute("class", windowTestPanelJasmine.$ext.getAttribute("class") + " testpanelJasmine");
-        _self = this;
         this.panel = windowTestPanelJasmine;
         this.nodes.push(windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine);
+        _self = this;
+        dataGridTestProjectJasmine.addEventListener('afterchoose', function() {
+          return _this.run(dataGridTestProjectJasmine.getSelection());
+        });
         ide.dispatchEvent("init.jasmine");
         this.setRepoName();
         this.initFilelist();
         return this.afterFileSave();
       },
       setRepoName: function() {
+        this.projectName = this.getProjectName();
         return modelTestsJasmine.data.childNodes[1].setAttribute('name', this.projectName);
       },
       initFilelist: function() {
@@ -188,7 +192,6 @@
       },
       parseMessage: function() {
         var failureMessages;
-        console.log(this.message);
         failureMessages = this.message.match(/Failures:\s([\s\S]*)\n+Finished/m);
         if (failureMessages != null) {
           return this.handleFailures(failureMessages);
@@ -209,10 +212,6 @@
         matches = failure.match(/Message:\s([\s\S]+?)Stacktrace:[\s\S]*?(at[\s\S]*)/m);
         message = matches[1];
         stacktrace = matches[2];
-        console.log("Messageeeeeeeeeeeee:");
-        console.log(message);
-        console.log("Stacktrace:");
-        console.log(stacktrace);
         errorLine = this.parseStackTrace(stacktrace);
         return console.log(errorLine);
       },
@@ -233,6 +232,14 @@
         return error;
       },
       allSpecsPass: function() {},
+      setPass: function(node, msg) {
+        apf.xmldb.setAttribute(node, "status", 1);
+        return apf.xmldb.setAttribute(node, "status-message", msg || "");
+      },
+      setError: function(node, msg) {
+        apf.xmldb.setAttribute(node, "status", 0);
+        return apf.xmldb.setAttribute(node, "status-message", msg || "");
+      },
       jasmine: function() {
         return this.runJasmine();
       }

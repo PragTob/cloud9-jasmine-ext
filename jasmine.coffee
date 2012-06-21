@@ -54,7 +54,6 @@ define (require, exports, module) ->
 
       @hotitems['jasmine'] = [@nodes[1]]
       @projectName = @getProjectName()
-      console.log @projectName
       
       
     init: ->
@@ -62,10 +61,17 @@ define (require, exports, module) ->
       buttonTestStopJasmine.$ext.setAttribute("class", buttonTestStopJasmine.$ext.getAttribute("class") + " buttonTestStopJasmine")
       windowTestPanelJasmine.$ext.setAttribute("class", windowTestPanelJasmine.$ext.getAttribute("class") + " testpanelJasmine")
 
+      @panel = windowTestPanelJasmine
+      @nodes.push windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine
+      
       _self = @
       
-      @panel = windowTestPanelJasmine
-      @nodes.push(windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine)
+      dataGridTestProjectJasmine.addEventListener 'afterchoose', =>
+      	@run dataGridTestProjectJasmine.getSelection()
+      	#nodes = dataGridTestProjectJasmine.getSelection()
+      	#for node in nodes
+	      #	_self.setError node, 'düdüm'
+	      # _self.setPass node, 'yay'
       
       ide.dispatchEvent "init.jasmine"
       @setRepoName()
@@ -74,6 +80,7 @@ define (require, exports, module) ->
       
     # bad bad hack, Cloud9 danke.
     setRepoName: ->
+      @projectName = @getProjectName()
       modelTestsJasmine.data.childNodes[1].setAttribute 'name', @projectName
       
     initFilelist: ->
@@ -165,7 +172,6 @@ define (require, exports, module) ->
     assembleMessage: (message) -> @message += message
     
     parseMessage: ->
-      console.log @message
       failureMessages = @message.match /Failures:\s([\s\S]*)\n+Finished/m
       if failureMessages?
         @handleFailures failureMessages
@@ -181,10 +187,6 @@ define (require, exports, module) ->
       matches = failure.match /Message:\s([\s\S]+?)Stacktrace:[\s\S]*?(at[\s\S]*)/m
       message = matches[1]
       stacktrace = matches[2]
-      console.log "Messageeeeeeeeeeeee:"
-      console.log message
-      console.log "Stacktrace:"
-      console.log stacktrace
       errorLine = @parseStackTrace(stacktrace)
       console.log errorLine
       
@@ -203,6 +205,13 @@ define (require, exports, module) ->
     
     allSpecsPass: ->
       # yaaaaaaaaaaaaaaaay
-        
+
+    setPass : (node, msg) ->
+      apf.xmldb.setAttribute node, "status", 1
+      apf.xmldb.setAttribute node, "status-message", msg || ""
+
+    setError: (node, msg) ->
+      apf.xmldb.setAttribute node, "status", 0
+      apf.xmldb.setAttribute node, "status-message", msg || ""       
 
     jasmine: -> @runJasmine()
