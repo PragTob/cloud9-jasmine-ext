@@ -59,12 +59,12 @@
       },
       init: function() {
         var _self;
-        btnTestRun.$ext.setAttribute("class", "light-dropdown");
-        btnTestStop.$ext.setAttribute("class", btnTestStop.$ext.getAttribute("class") + " btnTestStop");
-        winTestPanel.$ext.setAttribute("class", winTestPanel.$ext.getAttribute("class") + " testpanel");
+        buttonTestRunJasmine.$ext.setAttribute("class", "light-dropdown");
+        buttonTestStopJasmine.$ext.setAttribute("class", buttonTestStopJasmine.$ext.getAttribute("class") + " buttonTestStopJasmine");
+        windowTestPanelJasmine.$ext.setAttribute("class", windowTestPanelJasmine.$ext.getAttribute("class") + " testpanelJasmine");
         _self = this;
-        this.panel = winTestPanel;
-        this.nodes.push(winTestPanel, mnuRunSettings, stTestRun);
+        this.panel = windowTestPanelJasmine;
+        this.nodes.push(windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine);
         ide.dispatchEvent("init.jasmine");
         console.log("after init.jasmine");
         return this.initFilelist();
@@ -80,7 +80,7 @@
           sanitizedData = data.replace(/^\./gm, "");
           sanitizedData = sanitizedData.replace(/^\/node_modules\/.*/gm, "");
           specs = sanitizedData.match(/^.*\.spec\.(js|coffee)$/gm);
-          return _this.addFiles(specs, mdlTests.queryNode("repo[1]"));
+          return _this.addFiles(specs, modelTestsJasmine.queryNode("repo[1]"));
         });
       },
       addFiles: function(specs, parent) {
@@ -92,7 +92,7 @@
         });
         console.log("xmlFiles");
         console.log(xmlFiles);
-        return mdlTests.insert("<files>" + xmlFiles + "</files>", {
+        return modelTestsJasmine.insert("<files>" + xmlFiles + "</files>", {
           insertPoint: parent
         });
       },

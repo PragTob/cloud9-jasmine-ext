@@ -51,14 +51,14 @@ define (require, exports, module) ->
       @hotitems['jasmine'] = [@nodes[1]]
       
     init: ->
-      btnTestRun.$ext.setAttribute("class", "light-dropdown")
-      btnTestStop.$ext.setAttribute("class", btnTestStop.$ext.getAttribute("class") + " btnTestStop")
-      winTestPanel.$ext.setAttribute("class", winTestPanel.$ext.getAttribute("class") + " testpanel")
+      buttonTestRunJasmine.$ext.setAttribute("class", "light-dropdown")
+      buttonTestStopJasmine.$ext.setAttribute("class", buttonTestStopJasmine.$ext.getAttribute("class") + " buttonTestStopJasmine")
+      windowTestPanelJasmine.$ext.setAttribute("class", windowTestPanelJasmine.$ext.getAttribute("class") + " testpanelJasmine")
 
       _self = @
       
-      @panel = winTestPanel
-      @nodes.push(winTestPanel, mnuRunSettings, stTestRun)
+      @panel = windowTestPanelJasmine
+      @nodes.push(windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine)
       
       ide.dispatchEvent "init.jasmine"
       console.log "after init.jasmine"
@@ -71,7 +71,7 @@ define (require, exports, module) ->
         sanitizedData = data.replace(/^\./gm, "")
         sanitizedData = sanitizedData.replace(/^\/node_modules\/.*/gm, "")
         specs = sanitizedData.match(/^.*\.spec\.(js|coffee)$/gm)
-        @addFiles(specs, mdlTests.queryNode("repo[1]"))
+        @addFiles(specs, modelTestsJasmine.queryNode("repo[1]"))
     
     addFiles: (specs, parent) -> 
       console.log "addFiles"
@@ -84,7 +84,7 @@ define (require, exports, module) ->
       
       console.log "xmlFiles"        
       console.log xmlFiles
-      mdlTests.insert "<files>" + xmlFiles + "</files>", {insertPoint : parent}
+      modelTestsJasmine.insert "<files>" + xmlFiles + "</files>", {insertPoint : parent}
       
     show: ->
       if (navbar.current?) && (navbar.current != this)

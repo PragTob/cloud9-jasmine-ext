@@ -1,8 +1,8 @@
 <a:application xmlns:a="http://ajax.org/2005/aml">
-    <a:state id="stTestRun" />
-    <a:menu id="mnuRunSettings" />
+    <a:state id="stateTestRunJasmine" />
+    <a:menu id="menuRunSettingsJasmine" />
 
-    <a:window id="winTestPanel" 
+    <a:window id="windowTestPanelJasmine" 
       flex     = "1" 
       skin     = "fm-window" 
       title    = "Test Panel" 
@@ -11,39 +11,39 @@
       minwidth = "193"
       optimize = "true">
         <a:bar skin="c9-header-bar" top="-30" right="28" height="30">
-            <a:hbox id="barTestTools" class="testPanelControls">
+            <a:hbox id="barTestToolsJasmine" class="testPanelControls">
                 <a:button
-                  id       = "btnNewTestType"
+                  id       = "buttonNewTestTypeJasmine"
                   caption  = "New"
                   onclick  = ""
                   skin     = "c9-toolbarbutton-light"
                   class    = "with-arrow"
-                  submenu  = "mnuTestNew" />
-                <a:menu id="mnuTestNew">
+                  submenu  = "menuTestNewJasmine" />
+                <a:menu id="menuTestNewJasmine">
                     
                 </a:menu>
                 
                 <!--a:divider skin="c9-divider-double" /-->
                 
-                <a:splitbutton id="btnTestRun"
+                <a:splitbutton id="buttonTestRunJasmine"
                   caption  = "Run tests"
-                  onclick  = "require('ext/jasmine/jasmine').run(dgTestProject.getSelection());"
-                  submenu  = "mnuRunSettings" 
-                  visible  = "{!(stTestRun.active || !dgTestProject.selected)}" />
-                <a:button id="btnTestStop"
+                  onclick  = "require('ext/jasmine/jasmine').run(dataGridTestProjectJasmine.getSelection());"
+                  submenu  = "menuRunSettingsJasmine" 
+                  visible  = "{!(stateTestRunJasmine.active || !dataGridTestProjectJasmine.selected)}" />
+                <a:button id="buttonTestStopJasmine"
                   icon     = "stop.png"
                   caption  = "Stop Tests"
                   skin     = "c9-toolbarbutton-light"
                   onclick  = "require('ext/testpanel/testpanel').stop()"
-                  visible  = "{!btnTestRun.visible}"
-                  disabled = "{!stTestRun.active || stTestRun.stopping}" />
+                  visible  = "{!buttonTestRunJasmine.visible}"
+                  disabled = "{!stateTestRunJasmine.active || stateTestRunJasmine.stopping}" />
             </a:hbox>
         </a:bar>
         <a:button
           skin="header-btn"
           class="panel-settings"
-          submenu = "mnuFilter" />
-        <a:menu id="mnuFilter">
+          submenu = "menuFilterJasmine" />
+        <a:menu id="menuFilterJasmine">
             <a:item type="radio" value="all" selected="true">All</a:item>
             <a:divider />
             
@@ -55,19 +55,19 @@
                 require('ext/testpanel/testpanel').toggleExpandTests(this.checked);
             ">Auto Expand Tests</a:item>
             <a:divider />
-            <a:item submenu="mnuAutorunTests">Auto-run Tests</a:item>
+            <a:item submenu="menuAutorunTestsJasmine">Auto-run Tests</a:item>
         </a:menu>
-        <a:menu id="mnuAutorunTests">
-            <a:group id="grpAutoRunTests" value="[{require('ext/settings/settings').model}::auto/testpanel/@autorun]" />
-            <a:item group="grpAutoRunTests" type="radio" value="none">None</a:item>
+        <a:menu id="menuAutorunTestsJasmine">
+            <a:group id="groupAutoRunTestsJasmine" value="[{require('ext/settings/settings').model}::auto/testpanel/@autorun]" />
+            <a:item group="groupAutoRunTestsJasmine" type="radio" value="none">None</a:item>
             <a:divider />
-            <a:item group="grpAutoRunTests" type="radio" value="selection">Selection</a:item>
-            <a:item group="grpAutoRunTests" type="radio" value="pattern" onclick="
+            <a:item group="groupAutoRunTestsJasmine" type="radio" value="selection">Selection</a:item>
+            <a:item group="groupAutoRunTestsJasmine" type="radio" value="pattern" onclick="
                 require('ext/testpanel/testpanel').editAutoRunPattern();
             ">Pattern</a:item>
         </a:menu>
-        <a:vbox anchors = "0 0 0 0" id="vboxTestPanel" style="background:#333">
-            <a:model id="mdlTests">
+        <a:vbox anchors = "0 0 0 0" id="vboxTestPanelJasmine" style="background:#333">
+            <a:model id="modelTestsJasmine">
                 <data>
                     <repo name="Your Project">
                     
@@ -77,20 +77,20 @@
             
             <a:bar skin="basic" flex="1">
                 <a:datagrid 
-                  id        = "dgTestProject"
+                  id        = "dataGridTestProjectJasmine"
                   anchors   = "0 0 0 0"
                   border    = "0"
                   options   = "size"
-                  model     = "mdlTests"
+                  model     = "modelTestsJasmine"
                   each      = "[repo|file|test|assert|error]"
                   class     = "noscrollbar with-noise"
                   scrollbar = "sbShared 20 2 2"
                   multiselect    = "true"
                   startcollapsed = "true"
-                  contextmenu    = "mnuTestContext"
+                  contextmenu    = "menuTestContextJasmine"
                   empty-message  = "No tests yet"
                   onbeforeremove = "return require('core/util').removeInteractive(this)">
-                    <a:column id="colTestProject" caption="Name" width="60%" tree="1" icon="{require('ext/testpanel/testpanel').getIcon(localName(), [@status], [@type])}"><?lm
+                    <a:column id="columnTestProjectJasmine" caption="Name" width="60%" tree="1" icon="{require('ext/testpanel/testpanel').getIcon(localName(), [@status], [@type])}"><?lm
                         if (localName() == "error")
                             <span style='color:red'>[@name]</span>
                         else
@@ -110,7 +110,7 @@
                     <a:insert match="[file]" get="{return require('ext/testpanel/testpanel').parseFile(xmlNode)}" />
                     <a:remove match="[file]" set="{require('ext/filesystem/filesystem').remove([@path])}"/>
                     
-                    <a:expanded match="[test|file[test]]" id="expTestRule" />
+                    <a:expanded match="[test|file[test]]" id="expandedTestRuleJasmine" />
                     <a:expanded match="{apf.getChildNumber(%[repo]) == 1}" />
                 </a:datagrid>
             </a:bar>
@@ -119,15 +119,15 @@
                 @todo Edit could be test/assert
                       Remove could be test and assert
             -->
-            <a:menu id="mnuTestContext">
-                <a:item match="[test|file|repo[file]]" onclick="require('ext/jasmine/jasmine').run(dgTestProject.getSelection())">Run Tests</a:item>
+            <a:menu id="menuTestContextJasmine">
+                <a:item match="[test|file|repo[file]]" onclick="require('ext/jasmine/jasmine').run(dataGridTestProjectJasmine.getSelection())">Run Tests</a:item>
                 <a:item match="[file]" 
-                  onclick="var ide = require('core/ide');ide.dispatchEvent('openfile', {doc: ide.createDocument(dgTestProject.selected)});">Edit</a:item>
+                  onclick="var ide = require('core/ide');ide.dispatchEvent('openfile', {doc: ide.createDocument(dataGridTestProjectJasmine.selected)});">Edit</a:item>
                 <a:divider />
-                <a:item match="[file]" onclick="dgTestProject.remove()">Remove</a:item>
+                <a:item match="[file]" onclick="datagridTestProjectJasmine.remove()">Remove</a:item>
                 <a:divider />
                 <a:item match="[file]" onclick="
-                    require('ext/tabbehaviors/tabbehaviors').revealInTree(dgTestProject.selected);
+                    require('ext/tabbehaviors/tabbehaviors').revealInTree(dataGridTestProjectJasmine.selected);
                 ">Show in File Tree</a:item>
             </a:menu>
         </a:vbox>
