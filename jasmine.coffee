@@ -13,6 +13,7 @@ define (require, exports, module) ->
   DIVIDER_POSITION = 2300
   MENU_ENTRY_POSITION = 2400
   PANEL_POSITION = 10000
+  PATH_TO_JASMINE = 'node_modules/jasmine-node/lib/jasmine-node/cli.js'
 
   module.exports = ext.register 'ext/jasmine/jasmine',
     name: 'Jasmine'
@@ -63,6 +64,7 @@ define (require, exports, module) ->
       ide.dispatchEvent "init.jasmine"
       console.log "after init.jasmine"
       @initFilelist()
+      @afterFileSave()
       
     initFilelist: ->
       console.log "initFilelist"
@@ -85,6 +87,11 @@ define (require, exports, module) ->
       console.log "xmlFiles"        
       console.log xmlFiles
       modelTestsJasmine.insert "<files>" + xmlFiles + "</files>", {insertPoint : parent}
+      
+    afterFileSave: ->
+      ide.addEventListener 'afterfilesave', (event) =>
+        name = @getFileNameFrom event.node
+        @runJasmine [name]
       
     show: ->
       if (navbar.current?) && (navbar.current != this)
@@ -111,21 +118,35 @@ define (require, exports, module) ->
       
       panels.unregister(@)
       
+    getFileNameFrom: (node) ->
+      fullFileName = node.getAttribute('name')
+      name = fullFileName[0...fullFileName.indexOf('.')]
+      
     run: (nodes) ->
       console.log "noddeesss"
       console.log nodes
-      fileNames = "("
+      fileNames = []
       nodes.each (node) ->
-        name = node.getAttribute('name')
-        name = name[0...name.indexOf('.')]
-        fileNames += name + '|'
+        name = @getFileNameFrom node
+        fileNames.push name
       
-      fileNames = fileNames[0...-1] + ')'
-      noderunner.run('node_modules/jasmine-node/lib/jasmine-node/cli.js', ['--coffee', '-m', "#{fileNames}\\.", 'spec/' ], false)
-      
+      @runJasmine fileNames
+     
+    # fileNames is a simple array containing the file names
+    # without fileNames all specs are executed
+    runJasmine: (fileNames) ->
+      args = ['--coffee', 'spec/' ]
+      # add the regex match on fileNames
+      if fileNames? && fileNames.length > 0
+        matchString = '('
+        fileNames.each (name) -> matchString += name + '|'
         
+        # replace last | with ) to complete the Regex
+        matchString = matchString[0...-1] + ')' + "\\."
+        args.push '--match', matchString
+        
+      noderunner.run(PATH_TO_JASMINE, args, false)    
         
 
     jasmine: ->
-      console.log "Jasmine starts to run"
-      noderunner.run('node_modules/jasmine-node/lib/jasmine-node/cli.js', ['--coffee', '-m', "(itemStorage|server)\\.", 'spec/' ], false)
+      @runJasmine()

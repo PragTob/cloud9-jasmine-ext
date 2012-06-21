@@ -2,7 +2,7 @@
 (function() {
 
   define(function(require, exports, module) {
-    var DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, commands, css, ext, filelist, fs, ide, markup, menus, noderunner, panels;
+    var DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, PATH_TO_JASMINE, commands, css, ext, filelist, fs, ide, markup, menus, noderunner, panels;
     ide = require('core/ide');
     ext = require('core/ext');
     menus = require('ext/menus/menus');
@@ -16,6 +16,7 @@
     DIVIDER_POSITION = 2300;
     MENU_ENTRY_POSITION = 2400;
     PANEL_POSITION = 10000;
+    PATH_TO_JASMINE = 'node_modules/jasmine-node/lib/jasmine-node/cli.js';
     return module.exports = ext.register('ext/jasmine/jasmine', {
       name: 'Jasmine',
       dev: 'Tobias Metzke, Tobias Pfeiffer',
@@ -67,7 +68,8 @@
         this.nodes.push(windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine);
         ide.dispatchEvent("init.jasmine");
         console.log("after init.jasmine");
-        return this.initFilelist();
+        this.initFilelist();
+        return this.afterFileSave();
       },
       initFilelist: function() {
         var _this = this;
@@ -94,6 +96,14 @@
         console.log(xmlFiles);
         return modelTestsJasmine.insert("<files>" + xmlFiles + "</files>", {
           insertPoint: parent
+        });
+      },
+      afterFileSave: function() {
+        var _this = this;
+        return ide.addEventListener('afterfilesave', function(event) {
+          var name;
+          name = _this.getFileNameFrom(event.node);
+          return _this.runJasmine([name]);
         });
       },
       show: function() {
@@ -126,23 +136,38 @@
         this.nodes = [];
         return panels.unregister(this);
       },
+      getFileNameFrom: function(node) {
+        var fullFileName, name;
+        fullFileName = node.getAttribute('name');
+        return name = fullFileName.slice(0, fullFileName.indexOf('.'));
+      },
       run: function(nodes) {
         var fileNames;
         console.log("noddeesss");
         console.log(nodes);
-        fileNames = "(";
+        fileNames = [];
         nodes.each(function(node) {
           var name;
-          name = node.getAttribute('name');
-          name = name.slice(0, name.indexOf('.'));
-          return fileNames += name + '|';
+          name = this.getFileNameFrom(node);
+          return fileNames.push(name);
         });
-        fileNames = fileNames.slice(0, -1) + ')';
-        return noderunner.run('node_modules/jasmine-node/lib/jasmine-node/cli.js', ['--coffee', '-m', "" + fileNames + "\\.", 'spec/'], false);
+        return this.runJasmine(fileNames);
+      },
+      runJasmine: function(fileNames) {
+        var args, matchString;
+        args = ['--coffee', 'spec/'];
+        if ((fileNames != null) && fileNames.length > 0) {
+          matchString = '(';
+          fileNames.each(function(name) {
+            return matchString += name + '|';
+          });
+          matchString = matchString.slice(0, -1) + ')' + "\\.";
+          args.push('--match', matchString);
+        }
+        return noderunner.run(PATH_TO_JASMINE, args, false);
       },
       jasmine: function() {
-        console.log("Jasmine starts to run");
-        return noderunner.run('node_modules/jasmine-node/lib/jasmine-node/cli.js', ['--coffee', '-m', "(itemStorage|server)\\.", 'spec/'], false);
+        return this.runJasmine();
       }
     });
   });
