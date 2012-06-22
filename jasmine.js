@@ -57,7 +57,8 @@
           command: "jasmine"
         }), MENU_ENTRY_POSITION));
         this.hotitems['jasmine'] = [this.nodes[1]];
-        return this.projectName = this.getProjectName();
+        this.projectName = this.getProjectName();
+        return this.socketListenerRegistered = false;
       },
       init: function() {
         var _self,
@@ -172,13 +173,16 @@
           matchString = matchString.slice(0, -1) + ')' + "\\.";
           args.push('--match', matchString);
         }
-        this.registerSocketListener();
+        this.message = '';
+        if (!this.socketListenerRegistered) {
+          this.registerSocketListener();
+        }
         return noderunner.run(PATH_TO_JASMINE, args, false);
       },
       registerSocketListener: function() {
         var _this = this;
         this.message = '';
-        return ide.addEventListener('socketMessage', function(event) {
+        ide.addEventListener('socketMessage', function(event) {
           if (event.message.type === 'node-data') {
             _this.assembleMessage(event.message.data);
           }
@@ -186,6 +190,7 @@
             return _this.parseMessage();
           }
         });
+        return this.socketListenerRegistered = true;
       },
       assembleMessage: function(message) {
         return this.message += message;
@@ -221,11 +226,9 @@
         traces = stacktrace.split("\n");
         error = '';
         traces.each(function(trace) {
-          var lol;
           if ((trace.indexOf('node_modules') === -1) && (trace.indexOf(_this.projectName) >= 0)) {
             error = trace.match(new RegExp(_this.projectName + '(.+)'))[1];
             error = error.slice(0, -1);
-            lol = error;
             return error;
           }
         });

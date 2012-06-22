@@ -54,6 +54,7 @@ define (require, exports, module) ->
 
       @hotitems['jasmine'] = [@nodes[1]]
       @projectName = @getProjectName()
+      @socketListenerRegistered = false
       
       
     init: ->
@@ -160,7 +161,8 @@ define (require, exports, module) ->
         matchString = matchString[0...-1] + ')' + "\\."
         args.push '--match', matchString
       
-      @registerSocketListener()
+      @message = ''
+      @registerSocketListener() unless @socketListenerRegistered
       noderunner.run(PATH_TO_JASMINE, args, false)    
       
     registerSocketListener: ->
@@ -168,6 +170,8 @@ define (require, exports, module) ->
       ide.addEventListener 'socketMessage', (event) =>
         @assembleMessage(event.message.data) if event.message.type == 'node-data'
         @parseMessage() if event.message.type == 'node-exit'
+      
+      @socketListenerRegistered = true
         
     assembleMessage: (message) -> @message += message
     
@@ -197,7 +201,6 @@ define (require, exports, module) ->
         if (trace.indexOf('node_modules') == -1) && (trace.indexOf(@projectName) >= 0)
           error = trace.match(new RegExp(@projectName + '(.+)'))[1]
           error = error[0...-1] # remove the last character - \) didn't seem to work in the RegEx
-          lol = error
           return error
           
       error
