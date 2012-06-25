@@ -217,19 +217,20 @@
         return typeof dataGridTestProjectJasmine !== "undefined" && dataGridTestProjectJasmine !== null;
       },
       parseMessage: function() {
-        var failureMessages;
-        console.log(this.message);
-        failureMessages = this.message.match(/Failures:\s([\s\S]*)\n+Finished/m);
-        if (failureMessages != null) {
-          return this.handleFailures(failureMessages);
+        var failureStacktraces, jasmineFailures, verboseSpecs;
+        jasmineFailures = this.message.match(/(.+\n.\[3[12]m[\s\S]*)Failures:\s([\s\S]*)\n+Finished/m);
+        verboseSpecs = jasmineFailures[1];
+        failureStacktraces = jasmineFailures[2];
+        if (jasmineFailures != null) {
+          return this.handleFailures(failureStacktraces, verboseSpecs);
         } else {
           return this.allSpecsPass();
         }
       },
-      handleFailures: function(failureMessages) {
+      handleFailures: function(failureStacktraces, verboseSpecs) {
         var failures,
           _this = this;
-        failures = failureMessages[1].split("\n\n");
+        failures = failureStacktraces.split("\n\n");
         return failures.each(function(failure) {
           return _this.parseFailure(failure);
         });

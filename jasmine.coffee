@@ -192,16 +192,18 @@ define (require, exports, module) ->
     panelInitialized: -> dataGridTestProjectJasmine?
     
     parseMessage: ->
-      console.log @message
-      failureMessages = @message.match /Failures:\s([\s\S]*)\n+Finished/m
-      if failureMessages?
-        @handleFailures failureMessages
+      # Ulra regex the second - the point after \n is necessary as there is a totally weird sign
+      jasmineFailures = @message.match /(.+\n.\[3[12]m[\s\S]*)Failures:\s([\s\S]*)\n+Finished/m
+      verboseSpecs = jasmineFailures[1]
+      failureStacktraces = jasmineFailures[2]
+      if jasmineFailures?
+        @handleFailures failureStacktraces, verboseSpecs
       else
         @allSpecsPass()
         
-    handleFailures: (failureMessages) ->
+    handleFailures: (failureStacktraces, verboseSpecs) ->
       # separate failures are divided by an empty line
-      failures = failureMessages[1].split "\n\n"
+      failures = failureStacktraces.split "\n\n"
       failures.each (failure) => @parseFailure(failure)
       
     parseFailure: (failure) ->
