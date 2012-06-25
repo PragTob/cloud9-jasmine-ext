@@ -2,7 +2,7 @@
 (function() {
 
   define(function(require, exports, module) {
-    var DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, PATH_TO_JASMINE, TEST_ERROR_STATUS, TEST_PASS_STATUS, TEST_RESET_STATUS, commands, css, ext, filelist, fs, ide, markup, menus, noderunner, panels;
+    var DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, PATH_TO_JASMINE, TEST_ERROR_MESSAGE, TEST_ERROR_STATUS, TEST_PASS_STATUS, TEST_RESET_MESSAGE, TEST_RESET_STATUS, commands, css, ext, filelist, fs, ide, markup, menus, noderunner, panels;
     ide = require('core/ide');
     ext = require('core/ext');
     menus = require('ext/menus/menus');
@@ -20,6 +20,8 @@
     TEST_PASS_STATUS = 1;
     TEST_ERROR_STATUS = 0;
     TEST_RESET_STATUS = -1;
+    TEST_ERROR_MESSAGE = 'FAILED';
+    TEST_RESET_MESSAGE = 'No Result';
     return module.exports = ext.register('ext/jasmine/jasmine', {
       name: 'Jasmine',
       dev: 'Tobias Metzke, Tobias Pfeiffer',
@@ -234,7 +236,9 @@
           _this = this;
         failures = failureMessages[1].split("\n\n");
         return failures.each(function(failure) {
-          return _this.parseFailure(failure);
+          var failedTestFile;
+          failedTestFile = _this.parseFailure(failure);
+          return _this.specFails(failedTestFile);
         });
       },
       parseFailure: function(failure) {
@@ -242,7 +246,8 @@
         matches = failure.match(/Message:\s([\s\S]+?)Stacktrace:[\s\S]*?(at[\s\S]*)/m);
         message = matches[1];
         stacktrace = matches[2];
-        return errorLine = this.parseStackTrace(stacktrace);
+        errorLine = this.parseStackTrace(stacktrace);
+        return console.log(errorLine.slice(errorLine.lastIndexOf('/') + 1, errorLine.indexOf(':')));
       },
       parseStackTrace: function(stacktrace) {
         var error, traces,
@@ -258,18 +263,35 @@
         });
         return error;
       },
+      specFails: function(failedTest) {
+        var failed, _i, _len, _ref, _results;
+        this.resetTestStatus();
+        _ref = this.findFileNodesFor(failedTest);
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          failed = _ref[_i];
+          _results.push(this.setTestStatus(failed, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE));
+        }
+        return _results;
+      },
       allSpecsPass: function() {
-        var file, _i, _j, _len, _len1, _ref, _ref1, _results;
-        _ref = this.findFileNodesFor();
+        var file, _i, _len, _ref, _results;
+        this.resetTestStatus();
+        _ref = this.findFileNodesFor(this.testFiles);
+        _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           file = _ref[_i];
-          this.setTestStatus(file, TEST_RESET_STATUS);
-        }
-        _ref1 = this.findFileNodesFor(this.testFiles);
-        _results = [];
-        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-          file = _ref1[_j];
           _results.push(this.setTestStatus(file, TEST_PASS_STATUS));
+        }
+        return _results;
+      },
+      resetTestStatus: function() {
+        var file, _i, _len, _ref, _results;
+        _ref = this.findFileNodesFor();
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          file = _ref[_i];
+          _results.push(this.setTestStatus(file, TEST_RESET_STATUS, TEST_RESET_MESSAGE));
         }
         return _results;
       },

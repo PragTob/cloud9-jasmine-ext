@@ -21,6 +21,8 @@ define (require, exports, module) ->
   TEST_PASS_STATUS = 1
   TEST_ERROR_STATUS = 0
   TEST_RESET_STATUS = -1
+  TEST_ERROR_MESSAGE = 'FAILED'
+  TEST_RESET_MESSAGE = 'No Result'
 
   module.exports = ext.register 'ext/jasmine/jasmine',
     name: 'Jasmine'
@@ -202,13 +204,16 @@ define (require, exports, module) ->
     handleFailures: (failureMessages) ->
       # separate failures are divided by an empty line
       failures = failureMessages[1].split "\n\n"
-      failures.each (failure) => @parseFailure(failure)
+      failures.each (failure) => 
+        failedTestFile = @parseFailure(failure)
+        @specFails(failedTestFile)
       
     parseFailure: (failure) ->
       matches = failure.match /Message:\s([\s\S]+?)Stacktrace:[\s\S]*?(at[\s\S]*)/m
       message = matches[1]
       stacktrace = matches[2]
       errorLine = @parseStackTrace(stacktrace)
+      console.log errorLine[errorLine.lastIndexOf('/') + 1...errorLine.indexOf(':')]
       
     parseStackTrace: (stacktrace) ->
       traces = stacktrace.split "\n"
@@ -220,11 +225,20 @@ define (require, exports, module) ->
           return error
           
       error
-      
+    
+    specFails: (failedTest)->
+      @resetTestStatus()
+      @setTestStatus failed, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE for failed in @findFileNodesFor(failedTest)
+    
     allSpecsPass: ->
-      @setTestStatus file, TEST_RESET_STATUS for file in @findFileNodesFor()
+      @resetTestStatus()
       @setTestStatus file, TEST_PASS_STATUS for file in @findFileNodesFor(@testFiles)
 
+    resetTestStatus: ->
+      @setTestStatus file, TEST_RESET_STATUS, TEST_RESET_MESSAGE for file in @findFileNodesFor()
+      
+    # an empty array or undefined input leads to return of
+    # all file nodes of the project
     findFileNodesFor: (testFiles) ->
       model = dataGridTestProjectJasmine.$model
       files = []
