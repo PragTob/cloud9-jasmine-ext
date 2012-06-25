@@ -58,10 +58,8 @@ define (require, exports, module) ->
       
       
     init: ->
-      buttonTestRunJasmine.$ext.setAttribute("class", "light-dropdown")
-      buttonTestStopJasmine.$ext.setAttribute("class", buttonTestStopJasmine.$ext.getAttribute("class") + " buttonTestStopJasmine")
-      windowTestPanelJasmine.$ext.setAttribute("class", windowTestPanelJasmine.$ext.getAttribute("class") + " testpanelJasmine")
-
+      @initButtons()
+      # for the love of god do not remove, needed externally...
       @panel = windowTestPanelJasmine
       @nodes.push windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine
       
@@ -78,6 +76,11 @@ define (require, exports, module) ->
       @setRepoName()
       @initFilelist()
       @afterFileSave()
+      
+    initButtons: ->
+      buttonTestRunJasmine.$ext.setAttribute("class", "light-dropdown")
+      buttonTestStopJasmine.$ext.setAttribute("class", buttonTestStopJasmine.$ext.getAttribute("class") + " buttonTestStopJasmine")
+      windowTestPanelJasmine.$ext.setAttribute("class", windowTestPanelJasmine.$ext.getAttribute("class") + " testpanelJasmine")
       
     # bad bad hack, Cloud9 danke.
     setRepoName: ->

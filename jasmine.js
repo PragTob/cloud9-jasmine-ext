@@ -63,9 +63,7 @@
       init: function() {
         var _self,
           _this = this;
-        buttonTestRunJasmine.$ext.setAttribute("class", "light-dropdown");
-        buttonTestStopJasmine.$ext.setAttribute("class", buttonTestStopJasmine.$ext.getAttribute("class") + " buttonTestStopJasmine");
-        windowTestPanelJasmine.$ext.setAttribute("class", windowTestPanelJasmine.$ext.getAttribute("class") + " testpanelJasmine");
+        this.initButtons();
         this.panel = windowTestPanelJasmine;
         this.nodes.push(windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine);
         _self = this;
@@ -76,6 +74,11 @@
         this.setRepoName();
         this.initFilelist();
         return this.afterFileSave();
+      },
+      initButtons: function() {
+        buttonTestRunJasmine.$ext.setAttribute("class", "light-dropdown");
+        buttonTestStopJasmine.$ext.setAttribute("class", buttonTestStopJasmine.$ext.getAttribute("class") + " buttonTestStopJasmine");
+        return windowTestPanelJasmine.$ext.setAttribute("class", windowTestPanelJasmine.$ext.getAttribute("class") + " testpanelJasmine");
       },
       setRepoName: function() {
         this.projectName = this.getProjectName();
