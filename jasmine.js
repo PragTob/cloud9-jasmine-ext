@@ -180,7 +180,7 @@
         } else {
           this.testFiles = [];
         }
-        args = ['--coffee', 'spec/'];
+        args = ['--coffee', '--verbose', 'spec/'];
         if ((fileNames != null) && fileNames.length > 0) {
           matchString = '(';
           fileNames.each(function(name) {
@@ -218,6 +218,7 @@
       },
       parseMessage: function() {
         var failureMessages;
+        console.log(this.message);
         failureMessages = this.message.match(/Failures:\s([\s\S]*)\n+Finished/m);
         if (failureMessages != null) {
           return this.handleFailures(failureMessages);
