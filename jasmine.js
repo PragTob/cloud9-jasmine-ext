@@ -12,7 +12,7 @@
     panels = require('ext/panels/panels');
     markup = require('text!ext/jasmine/jasmine.xml');
     filelist = require('ext/filelist/filelist');
-    css = require("text!ext/jasmine/jasmine.css");
+    css = require('text!ext/jasmine/jasmine.css');
     DIVIDER_POSITION = 2300;
     MENU_ENTRY_POSITION = 2400;
     PANEL_POSITION = 10000;
@@ -210,6 +210,7 @@
         var fileNames,
           _this = this;
         fileNames = [];
+        console.log(nodes);
         nodes.each(function(node) {
           var name;
           name = _this.getFileNameFrom(node);
@@ -256,10 +257,10 @@
         failedTests = [];
         failures = failureStacktraces.split("\n\n");
         failures.each(function(failure) {
-          var failedTestFile;
-          failedTestFile = _this.parseFailure(failure);
-          _this.specFails(failedTestFile);
-          return failedTests.push(failedTestFile);
+          var error;
+          error = _this.parseFailure(failure);
+          _this.specFails(error);
+          return failedTests.push(error.fileName);
         });
         return this.testsPassedExcept(failedTests);
       },
@@ -276,36 +277,65 @@
         return this.specsPass(passedTests);
       },
       parseFailure: function(failure) {
-        var errorLine, matches, message, stacktrace;
+        var error, matches, message, stacktrace;
         matches = failure.match(/Message:\s([\s\S]+?)Stacktrace:[\s\S]*?(at[\s\S]*)/m);
         message = matches[1];
         stacktrace = matches[2];
-        errorLine = this.parseStackTrace(stacktrace);
-        return errorLine.slice(errorLine.lastIndexOf('/') + 1, errorLine.indexOf('.'));
+        return error = this.parseStackTrace(stacktrace);
       },
       parseStackTrace: function(stacktrace) {
         var error, traces,
           _this = this;
         traces = stacktrace.split("\n");
-        error = '';
+        error = null;
         traces.each(function(trace) {
-          if ((trace.indexOf('node_modules') === -1) && (trace.indexOf(_this.projectName) >= 0)) {
-            error = trace.match(new RegExp(_this.projectName + '(.+)'))[1];
-            error = error.slice(0, -1);
-            return error;
+          var errorLine;
+          if ((trace.indexOf('node_modules') === -1) && (trace.indexOf(_this.projectName) >= 0) && !error) {
+            errorLine = _this.parseTrace(trace);
+            return error = _this.parseError(errorLine);
           }
         });
         return error;
       },
-      specFails: function(failedTest) {
+      parseTrace: function(trace) {
+        var errorLine;
+        errorLine = trace.match(new RegExp(this.projectName + '(.+)'))[1];
+        return errorLine.slice(0, -1);
+      },
+      parseError: function(errorLine) {
+        var error, errorParts;
+        errorParts = errorLine.split(':');
+        error = {
+          filePath: errorParts[0],
+          fileName: this.fileNameFromPath(errorParts[0]),
+          line: errorParts[1],
+          column: errorParts[2]
+        };
+        console.log(error);
+        return error;
+      },
+      fileNameFromPath: function(filePath) {
+        return filePath.slice(filePath.lastIndexOf('/') + 1, filePath.indexOf('.'));
+      },
+      specFails: function(error) {
         var failed, _i, _len, _ref, _results;
-        _ref = this.findFileNodesFor([failedTest]);
+        _ref = this.findFileNodesFor([error.fileName]);
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           failed = _ref[_i];
-          _results.push(this.setTestStatus(failed, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE));
+          _results.push(this.setTestFailed(failed, error));
         }
         return _results;
+      },
+      setTestFailed: function(failedNode, error) {
+        try {
+          apf.xmldb.setAttribute(failedNode, "errorFilePath", ide.davPrefix + error.filePath);
+          apf.xmldb.setAttribute(failedNode, "errorLine", error.line);
+          apf.xmldb.setAttribute(failedNode, "errorColumn", error.column);
+        } catch (error) {
+          console.log("Caught bad error '" + error + "' and didn't enjoy it. Related to the damn helper specs.");
+        }
+        return this.setTestStatus(failedNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE);
       },
       specsPass: function(fileList) {
         var file, _i, _len, _ref, _results;
@@ -348,10 +378,23 @@
       setTestStatus: function(node, status, msg) {
         try {
           apf.xmldb.setAttribute(node, "status", status);
-          return apf.xmldb.setAttribute(node, "status-message", msg || "");
+          apf.xmldb.setAttribute(node, "status-message", msg || "");
+          return console.log(node);
         } catch (error) {
           return console.log("Caught bad error '" + error + "' and didn't enjoy it. Related to the damn helper specs.");
         }
+      },
+      goToCoffee: function(node) {
+        var error, livecoffee;
+        console.log(node);
+        error = {
+          filePath: node.getAttribute('errorFilePath'),
+          line: node.getAttribute('errorLine'),
+          column: node.getAttribute('errorColumn')
+        };
+        console.log(error);
+        livecoffee = require('ext/livecoffee/livecoffee');
+        return livecoffee.show(node, error.line, error.column);
       },
       jasmine: function() {
         return this.runJasmine();

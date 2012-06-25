@@ -1,6 +1,3 @@
-# rubular funktionierender RegEx (für einen): /Failures:.*\d+\).*Stacktrace:.*?CoffeeRecommender\/(.*?)\)/
-# failure messages: /Failures:.(.*)/
-
 define (require, exports, module) ->
   ide = require 'core/ide'
   ext = require 'core/ext'
@@ -11,7 +8,7 @@ define (require, exports, module) ->
   panels = require 'ext/panels/panels'
   markup = require 'text!ext/jasmine/jasmine.xml'
   filelist = require 'ext/filelist/filelist'
-  css = require "text!ext/jasmine/jasmine.css"
+  css = require 'text!ext/jasmine/jasmine.css'
 
   DIVIDER_POSITION = 2300
   MENU_ENTRY_POSITION = 2400
@@ -188,6 +185,7 @@ define (require, exports, module) ->
     
     runSelectedNodes: (nodes) ->
       fileNames = []
+      console.log nodes
       nodes.each (node) =>
         name = @getFileNameFrom node
         fileNames.push name
@@ -224,9 +222,10 @@ define (require, exports, module) ->
       failedTests = []
       failures = failureStacktraces.split "\n\n"
       failures.each (failure) => 
-        failedTestFile = @parseFailure(failure)
-        @specFails(failedTestFile)
-        failedTests.push failedTestFile
+        error = @parseFailure(failure)
+        @specFails(error)
+        failedTests.push error.fileName
+        
       @testsPassedExcept failedTests
       
     testsPassedExcept: (failedTests) ->
@@ -238,22 +237,51 @@ define (require, exports, module) ->
       matches = failure.match /Message:\s([\s\S]+?)Stacktrace:[\s\S]*?(at[\s\S]*)/m
       message = matches[1]
       stacktrace = matches[2]
-      errorLine = @parseStackTrace(stacktrace)
-      errorLine[errorLine.lastIndexOf('/') + 1...errorLine.indexOf('.')]
+      error = @parseStackTrace(stacktrace)
       
     parseStackTrace: (stacktrace) ->
       traces = stacktrace.split "\n"
-      error = ''
+      error = null
       traces.each (trace) =>
-        if (trace.indexOf('node_modules') == -1) && (trace.indexOf(@projectName) >= 0)
-          error = trace.match(new RegExp(@projectName + '(.+)'))[1]
-          error = error[0...-1] # remove the last character - \) didn't seem to work in the RegEx
-          return error
+        # we don't want failures from our node_modules and only from our project
+        if (trace.indexOf('node_modules') == -1) && 
+           (trace.indexOf(@projectName) >= 0) &&
+           !error # don't go through this loop too many times
+          errorLine = @parseTrace trace
+          error = @parseError errorLine
           
       error
+      
+    parseTrace: (trace) ->
+      errorLine = trace.match(new RegExp(@projectName + '(.+)'))[1]
+      errorLine[0...-1] # remove the last character - \) didn't seem to work in the RegEx
+      
+    parseError: (errorLine) ->
+      errorParts = errorLine.split ':'
+      error =
+        filePath: errorParts[0]
+        fileName: @fileNameFromPath errorParts[0]
+        line: errorParts[1]
+        column: errorParts[2]
+      console.log error
+      error
+        
+    fileNameFromPath: (filePath) ->
+      filePath[filePath.lastIndexOf('/') + 1...filePath.indexOf('.')]
+      
     
-    specFails: (failedTest)->
-      @setTestStatus failed, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE for failed in @findFileNodesFor([failedTest])
+    specFails: (error) ->
+       @setTestFailed failed, error for failed in @findFileNodesFor([error.fileName])
+      
+    setTestFailed: (failedNode, error) ->
+      try
+        apf.xmldb.setAttribute failedNode, "errorFilePath", ide.davPrefix + error.filePath
+        apf.xmldb.setAttribute failedNode, "errorLine", error.line
+        apf.xmldb.setAttribute failedNode, "errorColumn", error.column
+      catch error
+          console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
+      
+      @setTestStatus failedNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE
       
     specsPass: (fileList) ->
       @setTestStatus file, TEST_PASS_STATUS for file in @findFileNodesFor(fileList)
@@ -280,7 +308,20 @@ define (require, exports, module) ->
       try
         apf.xmldb.setAttribute node, "status", status
         apf.xmldb.setAttribute node, "status-message", msg || ""
+        console.log node
       catch error
           console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
+          
+    goToCoffee: (node) ->
+      console.log node
+      error =
+        filePath:     node.getAttribute 'errorFilePath'
+        line:    node.getAttribute 'errorLine'
+        column:  node.getAttribute 'errorColumn'
+      console.log error
+      livecoffee = require 'ext/livecoffee/livecoffee'
+      livecoffee.show(node, error.line, error.column)
+      
+      
 
     jasmine: -> @runJasmine()

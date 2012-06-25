@@ -98,7 +98,7 @@
                     ?></a:column>
                     <a:column caption="Status" width="41%"><?lm
                         if ([@status] === '0')
-                            <span style='color:red'>\[[@status-message]\]</span>
+                            <span style='color:red' errorFilePath='[@errorFilePath]' errorLine='[@errorLine]' errorRow='[@errorRow]'>\[[@status-message]\]</span>
                         else if ([@status] == '1')
                             <span style='color:green'>\[PASS{[@status-message] and " [@status-message]"}\]</span>
                         else if ([@status] == '-1')
@@ -129,6 +129,7 @@
                 <a:item match="[file]" onclick="
                     require('ext/tabbehaviors/tabbehaviors').revealInTree(dataGridTestProjectJasmine.selected);
                 ">Show in File Tree</a:item>
+                <a:item match="[test|file|repo[file]]" onclick="require('ext/jasmine/jasmine').goToCoffee(dataGridTestProjectJasmine.getSelection()[0])">Go to Coffee</a:item>
             </a:menu>
         </a:vbox>
     </a:window>
