@@ -17,6 +17,10 @@ define (require, exports, module) ->
   MENU_ENTRY_POSITION = 2400
   PANEL_POSITION = 10000
   PATH_TO_JASMINE = 'node_modules/jasmine-node/lib/jasmine-node/cli.js'
+  
+  TEST_PASS_STATUS = 1
+  TEST_ERROR_STATUS = 0
+  TEST_RESET_STATUS = -1
 
   module.exports = ext.register 'ext/jasmine/jasmine',
     name: 'Jasmine'
@@ -69,10 +73,6 @@ define (require, exports, module) ->
       	selection = dataGridTestProjectJasmine.getSelection()
       	selection = null if selection.some (node) -> node.tagName == 'repo'
       	@run selection
-      	#nodes = dataGridTestProjectJasmine.getSelection()
-      	#for node in nodes
-	      #	_self.setError node, 'düdüm'
-	      # _self.setPass node, 'yay'
       
       ide.dispatchEvent "init.jasmine"
       @setRepoName()
@@ -222,8 +222,8 @@ define (require, exports, module) ->
       error
       
     allSpecsPass: ->
-      @setNormal file for file in @findFileNodesFor()
-      @setPass file for file in @findFileNodesFor(@testFiles)
+      @setTestStatus file, TEST_RESET_STATUS for file in @findFileNodesFor()
+      @setTestStatus file, TEST_PASS_STATUS for file in @findFileNodesFor(@testFiles)
 
     findFileNodesFor: (testFiles) ->
       model = dataGridTestProjectJasmine.$model
@@ -234,16 +234,8 @@ define (require, exports, module) ->
         files = model.queryNode("repo[@name='#{@projectName}']").children
       files
 		
-    setPass : (node, msg) ->
-      apf.xmldb.setAttribute node, "status", 1
-      apf.xmldb.setAttribute node, "status-message", msg || ""
-
-    setError: (node, msg) ->
-      apf.xmldb.setAttribute node, "status", 0
-      apf.xmldb.setAttribute node, "status-message", msg || ""
-      
-    setNormal: (node, msg) ->
-      apf.xmldb.setAttribute node, "status", -1
+    setTestStatus : (node, status, msg) ->
+      apf.xmldb.setAttribute node, "status", status
       apf.xmldb.setAttribute node, "status-message", msg || ""
 
     jasmine: -> @runJasmine()

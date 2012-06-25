@@ -2,7 +2,7 @@
 (function() {
 
   define(function(require, exports, module) {
-    var DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, PATH_TO_JASMINE, commands, css, ext, filelist, fs, ide, markup, menus, noderunner, panels;
+    var DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, PATH_TO_JASMINE, TEST_ERROR_STATUS, TEST_PASS_STATUS, TEST_RESET_STATUS, commands, css, ext, filelist, fs, ide, markup, menus, noderunner, panels;
     ide = require('core/ide');
     ext = require('core/ext');
     menus = require('ext/menus/menus');
@@ -17,6 +17,9 @@
     MENU_ENTRY_POSITION = 2400;
     PANEL_POSITION = 10000;
     PATH_TO_JASMINE = 'node_modules/jasmine-node/lib/jasmine-node/cli.js';
+    TEST_PASS_STATUS = 1;
+    TEST_ERROR_STATUS = 0;
+    TEST_RESET_STATUS = -1;
     return module.exports = ext.register('ext/jasmine/jasmine', {
       name: 'Jasmine',
       dev: 'Tobias Metzke, Tobias Pfeiffer',
@@ -260,13 +263,13 @@
         _ref = this.findFileNodesFor();
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           file = _ref[_i];
-          this.setNormal(file);
+          this.setTestStatus(file, TEST_RESET_STATUS);
         }
         _ref1 = this.findFileNodesFor(this.testFiles);
         _results = [];
         for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
           file = _ref1[_j];
-          _results.push(this.setPass(file));
+          _results.push(this.setTestStatus(file, TEST_PASS_STATUS));
         }
         return _results;
       },
@@ -285,16 +288,8 @@
         }
         return files;
       },
-      setPass: function(node, msg) {
-        apf.xmldb.setAttribute(node, "status", 1);
-        return apf.xmldb.setAttribute(node, "status-message", msg || "");
-      },
-      setError: function(node, msg) {
-        apf.xmldb.setAttribute(node, "status", 0);
-        return apf.xmldb.setAttribute(node, "status-message", msg || "");
-      },
-      setNormal: function(node, msg) {
-        apf.xmldb.setAttribute(node, "status", -1);
+      setTestStatus: function(node, status, msg) {
+        apf.xmldb.setAttribute(node, "status", status);
         return apf.xmldb.setAttribute(node, "status-message", msg || "");
       },
       jasmine: function() {
