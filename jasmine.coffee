@@ -179,12 +179,17 @@ define (require, exports, module) ->
     registerSocketListener: ->
       @message = '' # neuer Socket Listener, neue Message
       ide.addEventListener 'socketMessage', (event) =>
-        @assembleMessage(event.message.data) if event.message.type == 'node-data'
-        @parseMessage() if event.message.type == 'node-exit'
+        if @panelInitialized()
+          @assembleMessage(event.message.data) if event.message.type == 'node-data'
+          @parseMessage() if event.message.type == 'node-exit'
       
       @socketListenerRegistered = true
         
     assembleMessage: (message) -> @message += message
+    
+    # check if the panel is initialized (somebody clicked on our panel,
+    # if it is not we can not display test results etc.)
+    panelInitialized: -> dataGridTestProjectJasmine?
     
     parseMessage: ->
       failureMessages = @message.match /Failures:\s([\s\S]*)\n+Finished/m

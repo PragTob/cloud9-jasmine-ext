@@ -199,17 +199,22 @@
         var _this = this;
         this.message = '';
         ide.addEventListener('socketMessage', function(event) {
-          if (event.message.type === 'node-data') {
-            _this.assembleMessage(event.message.data);
-          }
-          if (event.message.type === 'node-exit') {
-            return _this.parseMessage();
+          if (_this.panelInitialized()) {
+            if (event.message.type === 'node-data') {
+              _this.assembleMessage(event.message.data);
+            }
+            if (event.message.type === 'node-exit') {
+              return _this.parseMessage();
+            }
           }
         });
         return this.socketListenerRegistered = true;
       },
       assembleMessage: function(message) {
         return this.message += message;
+      },
+      panelInitialized: function() {
+        return typeof dataGridTestProjectJasmine !== "undefined" && dataGridTestProjectJasmine !== null;
       },
       parseMessage: function() {
         var failureMessages;
