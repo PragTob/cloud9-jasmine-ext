@@ -162,7 +162,7 @@ define (require, exports, module) ->
       else
       	@testFiles = []
       	
-      args = ['--coffee', 'spec/' ]
+      args = ['--coffee', '--verbose', 'spec/' ]
       # add the regex match on fileNames
       if fileNames? && fileNames.length > 0
         matchString = '('
@@ -192,6 +192,7 @@ define (require, exports, module) ->
     panelInitialized: -> dataGridTestProjectJasmine?
     
     parseMessage: ->
+      console.log @message
       failureMessages = @message.match /Failures:\s([\s\S]*)\n+Finished/m
       if failureMessages?
         @handleFailures failureMessages
@@ -220,7 +221,6 @@ define (require, exports, module) ->
           
       error
       
-    
     allSpecsPass: ->
       @setNormal file for file in @findFileNodesFor()
       @setPass file for file in @findFileNodesFor(@testFiles)
