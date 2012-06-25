@@ -73,13 +73,22 @@ define (require, exports, module) ->
       
       dataGridTestProjectJasmine.addEventListener 'afterchoose', =>
       	selection = dataGridTestProjectJasmine.getSelection()
-      	selection = null if selection.some (node) -> node.tagName == 'repo'
+      	selection = null if @containsRepo selection
       	@run selection
       
       ide.dispatchEvent "init.jasmine"
       @setRepoName()
       @initFilelist()
       @afterFileSave()
+    
+    # if only a folder containing specs is double clicked,
+    # the selection returns null, thus if the input here
+    # is null, the selection contains / is a repo
+    containsRepo: (array) -> 
+      if array?
+        array.some (node) -> node.tagName == 'repo'
+      else
+        true
       
     initButtons: ->
       buttonTestRunJasmine.$ext.setAttribute("class", "light-dropdown")
@@ -147,22 +156,21 @@ define (require, exports, module) ->
       name = fullFileName[0...fullFileName.indexOf('.')]
       
     run: (nodes) ->
-      fileNames = []
-      if nodes?
-        nodes.each (node) =>
-          name = @getFileNameFrom node
-          fileNames.push name
-      
-      @runJasmine fileNames
+      if @containsRepo nodes
+        @runJasmine()
+      else
+        @runSelectedNodes nodes
      
     # fileNames is a simple array containing the file names
     # without fileNames all specs are executed
     runJasmine: (fileNames) ->
       # save the tested files for later use
       if fileNames?
-      	@testFiles = fileNames 
+      	@testFiles = fileNames
       else
-      	@testFiles = []
+        fileNodes = @findFileNodesFor()
+        @testFiles = []
+        @testFiles.push @getFileNameFrom node for node in fileNodes
       	
       args = ['--coffee', '--verbose', 'spec/' ]
       # add the regex match on fileNames
@@ -177,6 +185,13 @@ define (require, exports, module) ->
       @message = ''
       @registerSocketListener() unless @socketListenerRegistered
       noderunner.run(PATH_TO_JASMINE, args, false)    
+    
+    runSelectedNodes: (nodes) ->
+      fileNames = []
+      nodes.each (node) =>
+        name = @getFileNameFrom node
+        fileNames.push name
+      @runJasmine fileNames
       
     registerSocketListener: ->
       @message = '' # neuer Socket Listener, neue Message
@@ -197,23 +212,36 @@ define (require, exports, module) ->
       console.log @message
       failureMessages = @message.match /Failures:\s([\s\S]*)\n+Finished/m
       if failureMessages?
+        @resetTestStatus()
         @handleFailures failureMessages
       else
         @allSpecsPass()
         
     handleFailures: (failureMessages) ->
       # separate failures are divided by an empty line
+      failedTests = []
       failures = failureMessages[1].split "\n\n"
       failures.each (failure) => 
         failedTestFile = @parseFailure(failure)
         @specFails(failedTestFile)
+        failedTests.push failedTestFile
+      @testsPassedExcept failedTests
       
+    testsPassedExcept: (failedTests) ->
+      passedTests = []
+      passedTests.push pass for pass in @testFiles when not failedTests.contains pass
+      console.log 'failed tests'
+      console.log failedTests
+      console.log 'passed tests'
+      console.log passedTests
+      @specsPass passedTests
+    
     parseFailure: (failure) ->
       matches = failure.match /Message:\s([\s\S]+?)Stacktrace:[\s\S]*?(at[\s\S]*)/m
       message = matches[1]
       stacktrace = matches[2]
       errorLine = @parseStackTrace(stacktrace)
-      console.log errorLine[errorLine.lastIndexOf('/') + 1...errorLine.indexOf(':')]
+      errorLine[errorLine.lastIndexOf('/') + 1...errorLine.indexOf('.')]
       
     parseStackTrace: (stacktrace) ->
       traces = stacktrace.split "\n"
@@ -227,23 +255,25 @@ define (require, exports, module) ->
       error
     
     specFails: (failedTest)->
-      @resetTestStatus()
-      @setTestStatus failed, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE for failed in @findFileNodesFor(failedTest)
+      @setTestStatus failed, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE for failed in @findFileNodesFor([failedTest])
+      
+    specsPass: (fileList) ->
+      @setTestStatus file, TEST_PASS_STATUS for file in @findFileNodesFor(fileList)
     
     allSpecsPass: ->
       @resetTestStatus()
-      @setTestStatus file, TEST_PASS_STATUS for file in @findFileNodesFor(@testFiles)
+      @specsPass @testFiles
 
     resetTestStatus: ->
       @setTestStatus file, TEST_RESET_STATUS, TEST_RESET_MESSAGE for file in @findFileNodesFor()
       
-    # an empty array or undefined input leads to return of
+    # leaving input empty leads to return of
     # all file nodes of the project
     findFileNodesFor: (testFiles) ->
       model = dataGridTestProjectJasmine.$model
       files = []
-      if testFiles?.length > 0
-        files.push model.queryNode "//node()[@name='#{file}.spec.coffee']" for file in @testFiles
+      if testFiles?
+        files.push model.queryNode "//node()[@name='#{file}.spec.coffee']" for file in testFiles
       else
         files = model.queryNode("repo[@name='#{@projectName}']").children
       files

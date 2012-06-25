@@ -75,9 +75,7 @@
         dataGridTestProjectJasmine.addEventListener('afterchoose', function() {
           var selection;
           selection = dataGridTestProjectJasmine.getSelection();
-          if (selection.some(function(node) {
-            return node.tagName === 'repo';
-          })) {
+          if (_this.containsRepo(selection)) {
             selection = null;
           }
           return _this.run(selection);
@@ -86,6 +84,15 @@
         this.setRepoName();
         this.initFilelist();
         return this.afterFileSave();
+      },
+      containsRepo: function(array) {
+        if (array != null) {
+          return array.some(function(node) {
+            return node.tagName === 'repo';
+          });
+        } else {
+          return true;
+        }
       },
       initButtons: function() {
         buttonTestRunJasmine.$ext.setAttribute("class", "light-dropdown");
@@ -166,24 +173,23 @@
         return name = fullFileName.slice(0, fullFileName.indexOf('.'));
       },
       run: function(nodes) {
-        var fileNames,
-          _this = this;
-        fileNames = [];
-        if (nodes != null) {
-          nodes.each(function(node) {
-            var name;
-            name = _this.getFileNameFrom(node);
-            return fileNames.push(name);
-          });
+        if (this.containsRepo(nodes)) {
+          return this.runJasmine();
+        } else {
+          return this.runSelectedNodes(nodes);
         }
-        return this.runJasmine(fileNames);
       },
       runJasmine: function(fileNames) {
-        var args, matchString;
+        var args, fileNodes, matchString, node, _i, _len;
         if (fileNames != null) {
           this.testFiles = fileNames;
         } else {
+          fileNodes = this.findFileNodesFor();
           this.testFiles = [];
+          for (_i = 0, _len = fileNodes.length; _i < _len; _i++) {
+            node = fileNodes[_i];
+            this.testFiles.push(this.getFileNameFrom(node));
+          }
         }
         args = ['--coffee', '--verbose', 'spec/'];
         if ((fileNames != null) && fileNames.length > 0) {
@@ -199,6 +205,17 @@
           this.registerSocketListener();
         }
         return noderunner.run(PATH_TO_JASMINE, args, false);
+      },
+      runSelectedNodes: function(nodes) {
+        var fileNames,
+          _this = this;
+        fileNames = [];
+        nodes.each(function(node) {
+          var name;
+          name = _this.getFileNameFrom(node);
+          return fileNames.push(name);
+        });
+        return this.runJasmine(fileNames);
       },
       registerSocketListener: function() {
         var _this = this;
@@ -226,20 +243,40 @@
         console.log(this.message);
         failureMessages = this.message.match(/Failures:\s([\s\S]*)\n+Finished/m);
         if (failureMessages != null) {
+          this.resetTestStatus();
           return this.handleFailures(failureMessages);
         } else {
           return this.allSpecsPass();
         }
       },
       handleFailures: function(failureMessages) {
-        var failures,
+        var failedTests, failures,
           _this = this;
+        failedTests = [];
         failures = failureMessages[1].split("\n\n");
-        return failures.each(function(failure) {
+        failures.each(function(failure) {
           var failedTestFile;
           failedTestFile = _this.parseFailure(failure);
-          return _this.specFails(failedTestFile);
+          _this.specFails(failedTestFile);
+          return failedTests.push(failedTestFile);
         });
+        return this.testsPassedExcept(failedTests);
+      },
+      testsPassedExcept: function(failedTests) {
+        var pass, passedTests, _i, _len, _ref;
+        passedTests = [];
+        _ref = this.testFiles;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          pass = _ref[_i];
+          if (!failedTests.contains(pass)) {
+            passedTests.push(pass);
+          }
+        }
+        console.log('failed tests');
+        console.log(failedTests);
+        console.log('passed tests');
+        console.log(passedTests);
+        return this.specsPass(passedTests);
       },
       parseFailure: function(failure) {
         var errorLine, matches, message, stacktrace;
@@ -247,7 +284,7 @@
         message = matches[1];
         stacktrace = matches[2];
         errorLine = this.parseStackTrace(stacktrace);
-        return console.log(errorLine.slice(errorLine.lastIndexOf('/') + 1, errorLine.indexOf(':')));
+        return errorLine.slice(errorLine.lastIndexOf('/') + 1, errorLine.indexOf('.'));
       },
       parseStackTrace: function(stacktrace) {
         var error, traces,
@@ -265,8 +302,7 @@
       },
       specFails: function(failedTest) {
         var failed, _i, _len, _ref, _results;
-        this.resetTestStatus();
-        _ref = this.findFileNodesFor(failedTest);
+        _ref = this.findFileNodesFor([failedTest]);
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           failed = _ref[_i];
@@ -274,16 +310,19 @@
         }
         return _results;
       },
-      allSpecsPass: function() {
+      specsPass: function(fileList) {
         var file, _i, _len, _ref, _results;
-        this.resetTestStatus();
-        _ref = this.findFileNodesFor(this.testFiles);
+        _ref = this.findFileNodesFor(fileList);
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           file = _ref[_i];
           _results.push(this.setTestStatus(file, TEST_PASS_STATUS));
         }
         return _results;
+      },
+      allSpecsPass: function() {
+        this.resetTestStatus();
+        return this.specsPass(this.testFiles);
       },
       resetTestStatus: function() {
         var file, _i, _len, _ref, _results;
@@ -296,13 +335,12 @@
         return _results;
       },
       findFileNodesFor: function(testFiles) {
-        var file, files, model, _i, _len, _ref;
+        var file, files, model, _i, _len;
         model = dataGridTestProjectJasmine.$model;
         files = [];
-        if ((testFiles != null ? testFiles.length : void 0) > 0) {
-          _ref = this.testFiles;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            file = _ref[_i];
+        if (testFiles != null) {
+          for (_i = 0, _len = testFiles.length; _i < _len; _i++) {
+            file = testFiles[_i];
             files.push(model.queryNode("//node()[@name='" + file + ".spec.coffee']"));
           }
         } else {
