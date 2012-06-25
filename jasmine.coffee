@@ -17,6 +17,12 @@ define (require, exports, module) ->
   MENU_ENTRY_POSITION = 2400
   PANEL_POSITION = 10000
   PATH_TO_JASMINE = 'node_modules/jasmine-node/lib/jasmine-node/cli.js'
+  
+  TEST_PASS_STATUS = 1
+  TEST_ERROR_STATUS = 0
+  TEST_RESET_STATUS = -1
+  TEST_ERROR_MESSAGE = 'FAILED'
+  TEST_RESET_MESSAGE = 'No Result'
 
   module.exports = ext.register 'ext/jasmine/jasmine',
     name: 'Jasmine'
@@ -67,17 +73,22 @@ define (require, exports, module) ->
       
       dataGridTestProjectJasmine.addEventListener 'afterchoose', =>
       	selection = dataGridTestProjectJasmine.getSelection()
-      	selection = null if selection.some (node) -> node.tagName == 'repo'
+      	selection = null if @containsRepo selection
       	@run selection
-      	#nodes = dataGridTestProjectJasmine.getSelection()
-      	#for node in nodes
-	      #	_self.setError node, 'düdüm'
-	      # _self.setPass node, 'yay'
       
       ide.dispatchEvent "init.jasmine"
       @setRepoName()
       @initFilelist()
       @afterFileSave()
+    
+    # if only a folder containing specs is double clicked,
+    # the selection returns null, thus if the input here
+    # is null, the selection contains / is a repo
+    containsRepo: (array) -> 
+      if array?
+        array.some (node) -> node.tagName == 'repo'
+      else
+        true
       
     initButtons: ->
       buttonTestRunJasmine.$ext.setAttribute("class", "light-dropdown")
@@ -145,22 +156,21 @@ define (require, exports, module) ->
       name = fullFileName[0...fullFileName.indexOf('.')]
       
     run: (nodes) ->
-      fileNames = []
-      if nodes?
-        nodes.each (node) =>
-          name = @getFileNameFrom node
-          fileNames.push name
-      
-      @runJasmine fileNames
+      if @containsRepo nodes
+        @runJasmine()
+      else
+        @runSelectedNodes nodes
      
     # fileNames is a simple array containing the file names
     # without fileNames all specs are executed
     runJasmine: (fileNames) ->
       # save the tested files for later use
       if fileNames?
-      	@testFiles = fileNames 
+      	@testFiles = fileNames
       else
-      	@testFiles = []
+        fileNodes = @findFileNodesFor()
+        @testFiles = []
+        @testFiles.push @getFileNameFrom node for node in fileNodes
       	
       args = ['--coffee', '--verbose', 'spec/' ]
       # add the regex match on fileNames
@@ -175,6 +185,13 @@ define (require, exports, module) ->
       @message = ''
       @registerSocketListener() unless @socketListenerRegistered
       noderunner.run(PATH_TO_JASMINE, args, false)    
+    
+    runSelectedNodes: (nodes) ->
+      fileNames = []
+      nodes.each (node) =>
+        name = @getFileNameFrom node
+        fileNames.push name
+      @runJasmine fileNames
       
     registerSocketListener: ->
       @message = '' # neuer Socket Listener, neue Message
@@ -194,23 +211,35 @@ define (require, exports, module) ->
     parseMessage: ->
       # Ulra regex the second - the point after \n is necessary as there is a totally weird sign
       jasmineFailures = @message.match /(.+\n.\[3[12]m[\s\S]*)Failures:\s([\s\S]*)\n+Finished/m
-      verboseSpecs = jasmineFailures[1]
-      failureStacktraces = jasmineFailures[2]
       if jasmineFailures?
+        @resetTestStatus()
+        verboseSpecs = jasmineFailures[1]
+        failureStacktraces = jasmineFailures[2]
         @handleFailures failureStacktraces, verboseSpecs
       else
         @allSpecsPass()
         
     handleFailures: (failureStacktraces, verboseSpecs) ->
       # separate failures are divided by an empty line
+      failedTests = []
       failures = failureStacktraces.split "\n\n"
-      failures.each (failure) => @parseFailure(failure)
+      failures.each (failure) => 
+        failedTestFile = @parseFailure(failure)
+        @specFails(failedTestFile)
+        failedTests.push failedTestFile
+      @testsPassedExcept failedTests
       
+    testsPassedExcept: (failedTests) ->
+      passedTests = []
+      passedTests.push pass for pass in @testFiles when not failedTests.contains pass
+      @specsPass passedTests
+    
     parseFailure: (failure) ->
       matches = failure.match /Message:\s([\s\S]+?)Stacktrace:[\s\S]*?(at[\s\S]*)/m
       message = matches[1]
       stacktrace = matches[2]
       errorLine = @parseStackTrace(stacktrace)
+      errorLine[errorLine.lastIndexOf('/') + 1...errorLine.indexOf('.')]
       
     parseStackTrace: (stacktrace) ->
       traces = stacktrace.split "\n"
@@ -222,25 +251,36 @@ define (require, exports, module) ->
           return error
           
       error
+    
+    specFails: (failedTest)->
+      @setTestStatus failed, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE for failed in @findFileNodesFor([failedTest])
       
+    specsPass: (fileList) ->
+      @setTestStatus file, TEST_PASS_STATUS for file in @findFileNodesFor(fileList)
+    
     allSpecsPass: ->
-      @setPass file for file in @getTestFiles()
+      @resetTestStatus()
+      @specsPass @testFiles
 
-    getTestFiles: ->
+    resetTestStatus: ->
+      @setTestStatus file, TEST_RESET_STATUS, TEST_RESET_MESSAGE for file in @findFileNodesFor()
+      
+    # leaving input empty leads to return of
+    # all file nodes of the project
+    findFileNodesFor: (testFiles) ->
       model = dataGridTestProjectJasmine.$model
       files = []
-      if @testFiles.length > 0
-        files.push model.queryNode "//node()[@name='#{file}.spec.coffee']" for file in @testFiles
+      if testFiles?
+        files.push model.queryNode "//node()[@name='#{file}.spec.coffee']" for file in testFiles
       else
-        files = model.queryNode("repo[@name='#{@projectNamee}']").children
+        files = model.queryNode("repo[@name='#{@projectName}']").children
       files
 		
-    setPass : (node, msg) ->
-      apf.xmldb.setAttribute node, "status", 1
-      apf.xmldb.setAttribute node, "status-message", msg || ""
-
-    setError: (node, msg) ->
-      apf.xmldb.setAttribute node, "status", 0
-      apf.xmldb.setAttribute node, "status-message", msg || ""       
+    setTestStatus : (node, status, msg) ->
+      try
+        apf.xmldb.setAttribute node, "status", status
+        apf.xmldb.setAttribute node, "status-message", msg || ""
+      catch error
+          console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
 
     jasmine: -> @runJasmine()

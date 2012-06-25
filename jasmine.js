@@ -2,7 +2,7 @@
 (function() {
 
   define(function(require, exports, module) {
-    var DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, PATH_TO_JASMINE, commands, css, ext, filelist, fs, ide, markup, menus, noderunner, panels;
+    var DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, PATH_TO_JASMINE, TEST_ERROR_MESSAGE, TEST_ERROR_STATUS, TEST_PASS_STATUS, TEST_RESET_MESSAGE, TEST_RESET_STATUS, commands, css, ext, filelist, fs, ide, markup, menus, noderunner, panels;
     ide = require('core/ide');
     ext = require('core/ext');
     menus = require('ext/menus/menus');
@@ -17,6 +17,11 @@
     MENU_ENTRY_POSITION = 2400;
     PANEL_POSITION = 10000;
     PATH_TO_JASMINE = 'node_modules/jasmine-node/lib/jasmine-node/cli.js';
+    TEST_PASS_STATUS = 1;
+    TEST_ERROR_STATUS = 0;
+    TEST_RESET_STATUS = -1;
+    TEST_ERROR_MESSAGE = 'FAILED';
+    TEST_RESET_MESSAGE = 'No Result';
     return module.exports = ext.register('ext/jasmine/jasmine', {
       name: 'Jasmine',
       dev: 'Tobias Metzke, Tobias Pfeiffer',
@@ -70,9 +75,7 @@
         dataGridTestProjectJasmine.addEventListener('afterchoose', function() {
           var selection;
           selection = dataGridTestProjectJasmine.getSelection();
-          if (selection.some(function(node) {
-            return node.tagName === 'repo';
-          })) {
+          if (_this.containsRepo(selection)) {
             selection = null;
           }
           return _this.run(selection);
@@ -81,6 +84,15 @@
         this.setRepoName();
         this.initFilelist();
         return this.afterFileSave();
+      },
+      containsRepo: function(array) {
+        if (array != null) {
+          return array.some(function(node) {
+            return node.tagName === 'repo';
+          });
+        } else {
+          return true;
+        }
       },
       initButtons: function() {
         buttonTestRunJasmine.$ext.setAttribute("class", "light-dropdown");
@@ -161,24 +173,23 @@
         return name = fullFileName.slice(0, fullFileName.indexOf('.'));
       },
       run: function(nodes) {
-        var fileNames,
-          _this = this;
-        fileNames = [];
-        if (nodes != null) {
-          nodes.each(function(node) {
-            var name;
-            name = _this.getFileNameFrom(node);
-            return fileNames.push(name);
-          });
+        if (this.containsRepo(nodes)) {
+          return this.runJasmine();
+        } else {
+          return this.runSelectedNodes(nodes);
         }
-        return this.runJasmine(fileNames);
       },
       runJasmine: function(fileNames) {
-        var args, matchString;
+        var args, fileNodes, matchString, node, _i, _len;
         if (fileNames != null) {
           this.testFiles = fileNames;
         } else {
+          fileNodes = this.findFileNodesFor();
           this.testFiles = [];
+          for (_i = 0, _len = fileNodes.length; _i < _len; _i++) {
+            node = fileNodes[_i];
+            this.testFiles.push(this.getFileNameFrom(node));
+          }
         }
         args = ['--coffee', '--verbose', 'spec/'];
         if ((fileNames != null) && fileNames.length > 0) {
@@ -194,6 +205,17 @@
           this.registerSocketListener();
         }
         return noderunner.run(PATH_TO_JASMINE, args, false);
+      },
+      runSelectedNodes: function(nodes) {
+        var fileNames,
+          _this = this;
+        fileNames = [];
+        nodes.each(function(node) {
+          var name;
+          name = _this.getFileNameFrom(node);
+          return fileNames.push(name);
+        });
+        return this.runJasmine(fileNames);
       },
       registerSocketListener: function() {
         var _this = this;
@@ -219,28 +241,47 @@
       parseMessage: function() {
         var failureStacktraces, jasmineFailures, verboseSpecs;
         jasmineFailures = this.message.match(/(.+\n.\[3[12]m[\s\S]*)Failures:\s([\s\S]*)\n+Finished/m);
-        verboseSpecs = jasmineFailures[1];
-        failureStacktraces = jasmineFailures[2];
         if (jasmineFailures != null) {
+          this.resetTestStatus();
+          verboseSpecs = jasmineFailures[1];
+          failureStacktraces = jasmineFailures[2];
           return this.handleFailures(failureStacktraces, verboseSpecs);
         } else {
           return this.allSpecsPass();
         }
       },
       handleFailures: function(failureStacktraces, verboseSpecs) {
-        var failures,
+        var failedTests, failures,
           _this = this;
+        failedTests = [];
         failures = failureStacktraces.split("\n\n");
-        return failures.each(function(failure) {
-          return _this.parseFailure(failure);
+        failures.each(function(failure) {
+          var failedTestFile;
+          failedTestFile = _this.parseFailure(failure);
+          _this.specFails(failedTestFile);
+          return failedTests.push(failedTestFile);
         });
+        return this.testsPassedExcept(failedTests);
+      },
+      testsPassedExcept: function(failedTests) {
+        var pass, passedTests, _i, _len, _ref;
+        passedTests = [];
+        _ref = this.testFiles;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          pass = _ref[_i];
+          if (!failedTests.contains(pass)) {
+            passedTests.push(pass);
+          }
+        }
+        return this.specsPass(passedTests);
       },
       parseFailure: function(failure) {
         var errorLine, matches, message, stacktrace;
         matches = failure.match(/Message:\s([\s\S]+?)Stacktrace:[\s\S]*?(at[\s\S]*)/m);
         message = matches[1];
         stacktrace = matches[2];
-        return errorLine = this.parseStackTrace(stacktrace);
+        errorLine = this.parseStackTrace(stacktrace);
+        return errorLine.slice(errorLine.lastIndexOf('/') + 1, errorLine.indexOf('.'));
       },
       parseStackTrace: function(stacktrace) {
         var error, traces,
@@ -256,38 +297,61 @@
         });
         return error;
       },
-      allSpecsPass: function() {
-        var file, _i, _len, _ref, _results;
-        _ref = this.getTestFiles();
+      specFails: function(failedTest) {
+        var failed, _i, _len, _ref, _results;
+        _ref = this.findFileNodesFor([failedTest]);
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          file = _ref[_i];
-          _results.push(this.setPass(file));
+          failed = _ref[_i];
+          _results.push(this.setTestStatus(failed, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE));
         }
         return _results;
       },
-      getTestFiles: function() {
-        var file, files, model, _i, _len, _ref;
+      specsPass: function(fileList) {
+        var file, _i, _len, _ref, _results;
+        _ref = this.findFileNodesFor(fileList);
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          file = _ref[_i];
+          _results.push(this.setTestStatus(file, TEST_PASS_STATUS));
+        }
+        return _results;
+      },
+      allSpecsPass: function() {
+        this.resetTestStatus();
+        return this.specsPass(this.testFiles);
+      },
+      resetTestStatus: function() {
+        var file, _i, _len, _ref, _results;
+        _ref = this.findFileNodesFor();
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          file = _ref[_i];
+          _results.push(this.setTestStatus(file, TEST_RESET_STATUS, TEST_RESET_MESSAGE));
+        }
+        return _results;
+      },
+      findFileNodesFor: function(testFiles) {
+        var file, files, model, _i, _len;
         model = dataGridTestProjectJasmine.$model;
         files = [];
-        if (this.testFiles.length > 0) {
-          _ref = this.testFiles;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            file = _ref[_i];
+        if (testFiles != null) {
+          for (_i = 0, _len = testFiles.length; _i < _len; _i++) {
+            file = testFiles[_i];
             files.push(model.queryNode("//node()[@name='" + file + ".spec.coffee']"));
           }
         } else {
-          files = model.queryNode("repo[@name='" + this.projectNamee + "']").children;
+          files = model.queryNode("repo[@name='" + this.projectName + "']").children;
         }
         return files;
       },
-      setPass: function(node, msg) {
-        apf.xmldb.setAttribute(node, "status", 1);
-        return apf.xmldb.setAttribute(node, "status-message", msg || "");
-      },
-      setError: function(node, msg) {
-        apf.xmldb.setAttribute(node, "status", 0);
-        return apf.xmldb.setAttribute(node, "status-message", msg || "");
+      setTestStatus: function(node, status, msg) {
+        try {
+          apf.xmldb.setAttribute(node, "status", status);
+          return apf.xmldb.setAttribute(node, "status-message", msg || "");
+        } catch (error) {
+          return console.log("Caught bad error '" + error + "' and didn't enjoy it. Related to the damn helper specs.");
+        }
       },
       jasmine: function() {
         return this.runJasmine();
