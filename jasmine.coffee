@@ -66,7 +66,9 @@ define (require, exports, module) ->
       _self = @
       
       dataGridTestProjectJasmine.addEventListener 'afterchoose', =>
-      	@run dataGridTestProjectJasmine.getSelection()
+      	selection = dataGridTestProjectJasmine.getSelection()
+      	selection = null if selection.some (node) -> node.tagName == 'repo'
+      	@run selection
       	#nodes = dataGridTestProjectJasmine.getSelection()
       	#for node in nodes
 	      #	_self.setError node, 'düdüm'
@@ -143,17 +145,23 @@ define (require, exports, module) ->
       name = fullFileName[0...fullFileName.indexOf('.')]
       
     run: (nodes) ->
-      console.log nodes
       fileNames = []
-      nodes.each (node) =>
-        name = @getFileNameFrom node
-        fileNames.push name
+      if nodes?
+        nodes.each (node) =>
+          name = @getFileNameFrom node
+          fileNames.push name
       
       @runJasmine fileNames
      
     # fileNames is a simple array containing the file names
     # without fileNames all specs are executed
     runJasmine: (fileNames) ->
+      # save the tested files for later use
+      if fileNames?
+      	@testFiles = fileNames 
+      else
+      	@testFiles = []
+      	
       args = ['--coffee', 'spec/' ]
       # add the regex match on fileNames
       if fileNames? && fileNames.length > 0
@@ -195,7 +203,6 @@ define (require, exports, module) ->
       message = matches[1]
       stacktrace = matches[2]
       errorLine = @parseStackTrace(stacktrace)
-      console.log errorLine
       
     parseStackTrace: (stacktrace) ->
       traces = stacktrace.split "\n"
@@ -210,8 +217,17 @@ define (require, exports, module) ->
       
     
     allSpecsPass: ->
-      # yaaaaaaaaaaaaaaaay
+      @setPass file for file in @getTestFiles()
 
+    getTestFiles: ->
+      model = dataGridTestProjectJasmine.$model
+      files = []
+      if @testFiles.length > 0
+        files.push model.queryNode "//node()[@name='#{file}.spec.coffee']" for file in @testFiles
+      else
+        files = model.queryNode("repo[@name='#{@projectNamee}']").children
+      files
+		
     setPass : (node, msg) ->
       apf.xmldb.setAttribute node, "status", 1
       apf.xmldb.setAttribute node, "status-message", msg || ""

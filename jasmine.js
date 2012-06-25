@@ -68,7 +68,14 @@
         this.nodes.push(windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine);
         _self = this;
         dataGridTestProjectJasmine.addEventListener('afterchoose', function() {
-          return _this.run(dataGridTestProjectJasmine.getSelection());
+          var selection;
+          selection = dataGridTestProjectJasmine.getSelection();
+          if (selection.some(function(node) {
+            return node.tagName === 'repo';
+          })) {
+            selection = null;
+          }
+          return _this.run(selection);
         });
         ide.dispatchEvent("init.jasmine");
         this.setRepoName();
@@ -156,17 +163,23 @@
       run: function(nodes) {
         var fileNames,
           _this = this;
-        console.log(nodes);
         fileNames = [];
-        nodes.each(function(node) {
-          var name;
-          name = _this.getFileNameFrom(node);
-          return fileNames.push(name);
-        });
+        if (nodes != null) {
+          nodes.each(function(node) {
+            var name;
+            name = _this.getFileNameFrom(node);
+            return fileNames.push(name);
+          });
+        }
         return this.runJasmine(fileNames);
       },
       runJasmine: function(fileNames) {
         var args, matchString;
+        if (fileNames != null) {
+          this.testFiles = fileNames;
+        } else {
+          this.testFiles = [];
+        }
         args = ['--coffee', 'spec/'];
         if ((fileNames != null) && fileNames.length > 0) {
           matchString = '(';
@@ -220,8 +233,7 @@
         matches = failure.match(/Message:\s([\s\S]+?)Stacktrace:[\s\S]*?(at[\s\S]*)/m);
         message = matches[1];
         stacktrace = matches[2];
-        errorLine = this.parseStackTrace(stacktrace);
-        return console.log(errorLine);
+        return errorLine = this.parseStackTrace(stacktrace);
       },
       parseStackTrace: function(stacktrace) {
         var error, traces,
@@ -237,7 +249,31 @@
         });
         return error;
       },
-      allSpecsPass: function() {},
+      allSpecsPass: function() {
+        var file, _i, _len, _ref, _results;
+        _ref = this.getTestFiles();
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          file = _ref[_i];
+          _results.push(this.setPass(file));
+        }
+        return _results;
+      },
+      getTestFiles: function() {
+        var file, files, model, _i, _len, _ref;
+        model = dataGridTestProjectJasmine.$model;
+        files = [];
+        if (this.testFiles.length > 0) {
+          _ref = this.testFiles;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            file = _ref[_i];
+            files.push(model.queryNode("//node()[@name='" + file + ".spec.coffee']"));
+          }
+        } else {
+          files = model.queryNode("repo[@name='" + this.projectNamee + "']").children;
+        }
+        return files;
+      },
       setPass: function(node, msg) {
         apf.xmldb.setAttribute(node, "status", 1);
         return apf.xmldb.setAttribute(node, "status-message", msg || "");
