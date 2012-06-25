@@ -222,15 +222,16 @@ define (require, exports, module) ->
       
     
     allSpecsPass: ->
-      @setPass file for file in @getTestFiles()
+      @setNormal file for file in @findFileNodesFor()
+      @setPass file for file in @findFileNodesFor(@testFiles)
 
-    getTestFiles: ->
+    findFileNodesFor: (testFiles) ->
       model = dataGridTestProjectJasmine.$model
       files = []
-      if @testFiles.length > 0
+      if testFiles?.length > 0
         files.push model.queryNode "//node()[@name='#{file}.spec.coffee']" for file in @testFiles
       else
-        files = model.queryNode("repo[@name='#{@projectNamee}']").children
+        files = model.queryNode("repo[@name='#{@projectName}']").children
       files
 		
     setPass : (node, msg) ->
@@ -239,6 +240,10 @@ define (require, exports, module) ->
 
     setError: (node, msg) ->
       apf.xmldb.setAttribute node, "status", 0
-      apf.xmldb.setAttribute node, "status-message", msg || ""       
+      apf.xmldb.setAttribute node, "status-message", msg || ""
+      
+    setNormal: (node, msg) ->
+      apf.xmldb.setAttribute node, "status", -1
+      apf.xmldb.setAttribute node, "status-message", msg || ""
 
     jasmine: -> @runJasmine()

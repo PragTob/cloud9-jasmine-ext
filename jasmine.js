@@ -255,27 +255,32 @@
         return error;
       },
       allSpecsPass: function() {
-        var file, _i, _len, _ref, _results;
-        _ref = this.getTestFiles();
-        _results = [];
+        var file, _i, _j, _len, _len1, _ref, _ref1, _results;
+        _ref = this.findFileNodesFor();
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           file = _ref[_i];
+          this.setNormal(file);
+        }
+        _ref1 = this.findFileNodesFor(this.testFiles);
+        _results = [];
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          file = _ref1[_j];
           _results.push(this.setPass(file));
         }
         return _results;
       },
-      getTestFiles: function() {
+      findFileNodesFor: function(testFiles) {
         var file, files, model, _i, _len, _ref;
         model = dataGridTestProjectJasmine.$model;
         files = [];
-        if (this.testFiles.length > 0) {
+        if ((testFiles != null ? testFiles.length : void 0) > 0) {
           _ref = this.testFiles;
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             file = _ref[_i];
             files.push(model.queryNode("//node()[@name='" + file + ".spec.coffee']"));
           }
         } else {
-          files = model.queryNode("repo[@name='" + this.projectNamee + "']").children;
+          files = model.queryNode("repo[@name='" + this.projectName + "']").children;
         }
         return files;
       },
@@ -285,6 +290,10 @@
       },
       setError: function(node, msg) {
         apf.xmldb.setAttribute(node, "status", 0);
+        return apf.xmldb.setAttribute(node, "status-message", msg || "");
+      },
+      setNormal: function(node, msg) {
+        apf.xmldb.setAttribute(node, "status", -1);
         return apf.xmldb.setAttribute(node, "status-message", msg || "");
       },
       jasmine: function() {
