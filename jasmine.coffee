@@ -18,14 +18,14 @@ define (require, exports, module) ->
   TEST_PASS_STATUS = 1
   TEST_ERROR_STATUS = 0
   TEST_RESET_STATUS = -1
-  TEST_ERROR_MESSAGE = 'FAILED'
+  TEST_ERROR_MESSAGE = 'FAILED: '
   TEST_RESET_MESSAGE = 'No Result'
 
   module.exports = ext.register 'ext/jasmine/jasmine',
     name: 'Jasmine'
     dev: 'Tobias Metzke, Tobias Pfeiffer'
     type: ext.GENERAL
-    alone: yes # TODO: Access to livecoffee?
+    alone: yes
     commands:
       'jasmine': hint: 'Run your tests with jasmine!'
     hotitems : {}
@@ -185,7 +185,6 @@ define (require, exports, module) ->
     
     runSelectedNodes: (nodes) ->
       fileNames = []
-      console.log nodes
       nodes.each (node) =>
         name = @getFileNameFrom node
         fileNames.push name
@@ -238,6 +237,12 @@ define (require, exports, module) ->
       message = matches[1]
       stacktrace = matches[2]
       error = @parseStackTrace(stacktrace)
+      error.message = @sanitizeErrorMessage message
+      error
+    
+    sanitizeErrorMessage: (message) ->
+      matches = message.match /\[31m(.+)\[\d+m/
+      matches[1]
       
     parseStackTrace: (stacktrace) ->
       traces = stacktrace.split "\n"
@@ -263,7 +268,6 @@ define (require, exports, module) ->
         fileName: @fileNameFromPath errorParts[0]
         line: errorParts[1]
         column: errorParts[2]
-      console.log error
       error
         
     fileNameFromPath: (filePath) ->
@@ -281,7 +285,7 @@ define (require, exports, module) ->
       catch error
           console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
       
-      @setTestStatus failedNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE
+      @setTestStatus failedNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + error.message
       
     specsPass: (fileList) ->
       @setTestStatus file, TEST_PASS_STATUS for file in @findFileNodesFor(fileList)
@@ -308,17 +312,14 @@ define (require, exports, module) ->
       try
         apf.xmldb.setAttribute node, "status", status
         apf.xmldb.setAttribute node, "status-message", msg || ""
-        console.log node
       catch error
           console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
           
     goToCoffee: (node) ->
-      console.log node
       error =
         filePath:     node.getAttribute 'errorFilePath'
         line:    node.getAttribute 'errorLine'
         column:  node.getAttribute 'errorColumn'
-      console.log error
       livecoffee = require 'ext/livecoffee/livecoffee'
       livecoffee.show(node, error.line, error.column)
       

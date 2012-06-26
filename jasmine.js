@@ -20,7 +20,7 @@
     TEST_PASS_STATUS = 1;
     TEST_ERROR_STATUS = 0;
     TEST_RESET_STATUS = -1;
-    TEST_ERROR_MESSAGE = 'FAILED';
+    TEST_ERROR_MESSAGE = 'FAILED: ';
     TEST_RESET_MESSAGE = 'No Result';
     return module.exports = ext.register('ext/jasmine/jasmine', {
       name: 'Jasmine',
@@ -210,7 +210,6 @@
         var fileNames,
           _this = this;
         fileNames = [];
-        console.log(nodes);
         nodes.each(function(node) {
           var name;
           name = _this.getFileNameFrom(node);
@@ -281,7 +280,14 @@
         matches = failure.match(/Message:\s([\s\S]+?)Stacktrace:[\s\S]*?(at[\s\S]*)/m);
         message = matches[1];
         stacktrace = matches[2];
-        return error = this.parseStackTrace(stacktrace);
+        error = this.parseStackTrace(stacktrace);
+        error.message = this.sanitizeErrorMessage(message);
+        return error;
+      },
+      sanitizeErrorMessage: function(message) {
+        var matches;
+        matches = message.match(/\[31m(.+)\[\d+m/);
+        return matches[1];
       },
       parseStackTrace: function(stacktrace) {
         var error, traces,
@@ -311,7 +317,6 @@
           line: errorParts[1],
           column: errorParts[2]
         };
-        console.log(error);
         return error;
       },
       fileNameFromPath: function(filePath) {
@@ -335,7 +340,7 @@
         } catch (error) {
           console.log("Caught bad error '" + error + "' and didn't enjoy it. Related to the damn helper specs.");
         }
-        return this.setTestStatus(failedNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE);
+        return this.setTestStatus(failedNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + error.message);
       },
       specsPass: function(fileList) {
         var file, _i, _len, _ref, _results;
@@ -378,21 +383,18 @@
       setTestStatus: function(node, status, msg) {
         try {
           apf.xmldb.setAttribute(node, "status", status);
-          apf.xmldb.setAttribute(node, "status-message", msg || "");
-          return console.log(node);
+          return apf.xmldb.setAttribute(node, "status-message", msg || "");
         } catch (error) {
           return console.log("Caught bad error '" + error + "' and didn't enjoy it. Related to the damn helper specs.");
         }
       },
       goToCoffee: function(node) {
         var error, livecoffee;
-        console.log(node);
         error = {
           filePath: node.getAttribute('errorFilePath'),
           line: node.getAttribute('errorLine'),
           column: node.getAttribute('errorColumn')
         };
-        console.log(error);
         livecoffee = require('ext/livecoffee/livecoffee');
         return livecoffee.show(node, error.line, error.column);
       },
