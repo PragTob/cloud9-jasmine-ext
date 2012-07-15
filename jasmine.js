@@ -240,6 +240,9 @@
       },
       parseMessage: function() {
         var failureStacktraces, jasmineFailures, verboseSpecs;
+        if (this.isSyntaxError(this.message)) {
+          return this.handleSyntaxError();
+        }
         jasmineFailures = this.message.match(/(.+\n.\[3[12]m[\s\S]*)Failures:\s([\s\S]*)\n+Finished/m);
         if (jasmineFailures != null) {
           this.resetTestStatus();
@@ -249,6 +252,13 @@
         } else {
           return this.allSpecsPass();
         }
+      },
+      isSyntaxError: function(message) {
+        console.log(message);
+        return message.indexOf('SyntaxError:') !== -1;
+      },
+      handleSyntaxError: function() {
+        return console.log('Syntax error during the execution of the tests');
       },
       handleFailures: function(failureStacktraces, verboseSpecs) {
         var failedTests, failures,

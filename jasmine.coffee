@@ -206,6 +206,7 @@ define (require, exports, module) ->
     panelInitialized: -> dataGridTestProjectJasmine?
     
     parseMessage: ->
+      return @handleSyntaxError() if @isSyntaxError @message 
       # Ulra regex the second - the point after \n is necessary as there is a totally weird sign
       jasmineFailures = @message.match /(.+\n.\[3[12]m[\s\S]*)Failures:\s([\s\S]*)\n+Finished/m
       if jasmineFailures?
@@ -215,6 +216,14 @@ define (require, exports, module) ->
         @handleFailures failureStacktraces, verboseSpecs
       else
         @allSpecsPass()
+        
+    isSyntaxError: (message) -> 
+      console.log message
+      message.indexOf('SyntaxError:') != -1
+      
+    handleSyntaxError: ->
+      console.log 'Syntax error during the execution of the tests'
+      # TODO: display syntax error
         
     handleFailures: (failureStacktraces, verboseSpecs) ->
       # separate failures are divided by an empty line
