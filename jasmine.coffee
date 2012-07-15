@@ -9,6 +9,7 @@ define (require, exports, module) ->
   markup = require 'text!ext/jasmine/jasmine.xml'
   filelist = require 'ext/filelist/filelist'
   css = require 'text!ext/jasmine/jasmine.css'
+  {MessageParser} = require 'ext/jasmine/lib/messageParser'
 
   DIVIDER_POSITION = 2300
   MENU_ENTRY_POSITION = 2400
@@ -66,7 +67,7 @@ define (require, exports, module) ->
       @panel = windowTestPanelJasmine
       @nodes.push windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine
       
-      _self = @
+      @messageParser = new MessageParser()
       
       dataGridTestProjectJasmine.addEventListener 'afterchoose', =>
       	selection = dataGridTestProjectJasmine.getSelection()
@@ -76,7 +77,7 @@ define (require, exports, module) ->
       ide.dispatchEvent "init.jasmine"
       @setRepoName()
       @initFilelist()
-      @afterFileSave()
+      @addFileSaveListener()
     
     # if only a folder containing specs is double clicked,
     # the selection returns null, thus if the input here
@@ -115,8 +116,8 @@ define (require, exports, module) ->
       
       modelTestsJasmine.insert "<files>" + xmlFiles + "</files>", {insertPoint : parent}
       
-    afterFileSave: ->
-      ide.addEventListener 'afterfilesave', (event) =>
+    addFileSaveListener: ->
+      ide.addEventListener 'addFileSaveListener', (event) =>
         name = @getFileNameFrom event.node
         @runJasmine [name]
         
@@ -206,7 +207,7 @@ define (require, exports, module) ->
     panelInitialized: -> dataGridTestProjectJasmine?
     
     parseMessage: ->
-      return @handleSyntaxError() if @isSyntaxError @message 
+      return @handleSyntaxError() if @messageParser.isSyntaxError @message 
       # Ulra regex the second - the point after \n is necessary as there is a totally weird sign
       jasmineFailures = @message.match /(.+\n.\[3[12]m[\s\S]*)Failures:\s([\s\S]*)\n+Finished/m
       if jasmineFailures?
@@ -217,10 +218,6 @@ define (require, exports, module) ->
       else
         @allSpecsPass()
         
-    isSyntaxError: (message) -> 
-      console.log message
-      message.indexOf('SyntaxError:') != -1
-      
     handleSyntaxError: ->
       console.log 'Syntax error during the execution of the tests'
       # TODO: display syntax error
@@ -331,7 +328,5 @@ define (require, exports, module) ->
         column:  node.getAttribute 'errorColumn'
       livecoffee = require 'ext/livecoffee/livecoffee'
       livecoffee.show(node, error.line, error.column)
-      
-      
 
     jasmine: -> @runJasmine()

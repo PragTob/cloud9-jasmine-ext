@@ -2,7 +2,7 @@
 (function() {
 
   define(function(require, exports, module) {
-    var DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, PATH_TO_JASMINE, TEST_ERROR_MESSAGE, TEST_ERROR_STATUS, TEST_PASS_STATUS, TEST_RESET_MESSAGE, TEST_RESET_STATUS, commands, css, ext, filelist, fs, ide, markup, menus, noderunner, panels;
+    var DIVIDER_POSITION, MENU_ENTRY_POSITION, MessageParser, PANEL_POSITION, PATH_TO_JASMINE, TEST_ERROR_MESSAGE, TEST_ERROR_STATUS, TEST_PASS_STATUS, TEST_RESET_MESSAGE, TEST_RESET_STATUS, commands, css, ext, filelist, fs, ide, markup, menus, noderunner, panels;
     ide = require('core/ide');
     ext = require('core/ext');
     menus = require('ext/menus/menus');
@@ -13,6 +13,7 @@
     markup = require('text!ext/jasmine/jasmine.xml');
     filelist = require('ext/filelist/filelist');
     css = require('text!ext/jasmine/jasmine.css');
+    MessageParser = require('ext/jasmine/lib/messageParser').MessageParser;
     DIVIDER_POSITION = 2300;
     MENU_ENTRY_POSITION = 2400;
     PANEL_POSITION = 10000;
@@ -66,12 +67,11 @@
         return this.socketListenerRegistered = false;
       },
       init: function() {
-        var _self,
-          _this = this;
+        var _this = this;
         this.initButtons();
         this.panel = windowTestPanelJasmine;
         this.nodes.push(windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine);
-        _self = this;
+        this.messageParser = new MessageParser();
         dataGridTestProjectJasmine.addEventListener('afterchoose', function() {
           var selection;
           selection = dataGridTestProjectJasmine.getSelection();
@@ -83,7 +83,7 @@
         ide.dispatchEvent("init.jasmine");
         this.setRepoName();
         this.initFilelist();
-        return this.afterFileSave();
+        return this.addFileSaveListener();
       },
       containsRepo: function(array) {
         if (array != null) {
@@ -126,9 +126,9 @@
           insertPoint: parent
         });
       },
-      afterFileSave: function() {
+      addFileSaveListener: function() {
         var _this = this;
-        return ide.addEventListener('afterfilesave', function(event) {
+        return ide.addEventListener('addFileSaveListener', function(event) {
           var name;
           name = _this.getFileNameFrom(event.node);
           return _this.runJasmine([name]);
@@ -240,7 +240,7 @@
       },
       parseMessage: function() {
         var failureStacktraces, jasmineFailures, verboseSpecs;
-        if (this.isSyntaxError(this.message)) {
+        if (this.messageParser.isSyntaxError(this.message)) {
           return this.handleSyntaxError();
         }
         jasmineFailures = this.message.match(/(.+\n.\[3[12]m[\s\S]*)Failures:\s([\s\S]*)\n+Finished/m);
@@ -252,10 +252,6 @@
         } else {
           return this.allSpecsPass();
         }
-      },
-      isSyntaxError: function(message) {
-        console.log(message);
-        return message.indexOf('SyntaxError:') !== -1;
       },
       handleSyntaxError: function() {
         return console.log('Syntax error during the execution of the tests');
