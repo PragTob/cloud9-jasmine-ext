@@ -2,7 +2,7 @@
 (function() {
 
   define(function(require, exports, module) {
-    var DIVIDER_POSITION, MENU_ENTRY_POSITION, MessageParser, PANEL_POSITION, PATH_TO_JASMINE, TEST_ERROR_MESSAGE, TEST_ERROR_STATUS, TEST_PASS_STATUS, TEST_RESET_MESSAGE, TEST_RESET_STATUS, commands, css, ext, filelist, fs, ide, markup, menus, noderunner, panels;
+    var DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, PATH_TO_JASMINE, ParsedMessage, TEST_ERROR_MESSAGE, TEST_ERROR_STATUS, TEST_PASS_STATUS, TEST_RESET_MESSAGE, TEST_RESET_STATUS, commands, css, ext, filelist, fs, ide, markup, menus, noderunner, panels;
     ide = require('core/ide');
     ext = require('core/ext');
     menus = require('ext/menus/menus');
@@ -13,7 +13,7 @@
     markup = require('text!ext/jasmine/jasmine.xml');
     filelist = require('ext/filelist/filelist');
     css = require('text!ext/jasmine/jasmine.css');
-    MessageParser = require('ext/jasmine/lib/messageParser').MessageParser;
+    ParsedMessage = require('ext/jasmine/lib/parsedMessage').ParsedMessage;
     DIVIDER_POSITION = 2300;
     MENU_ENTRY_POSITION = 2400;
     PANEL_POSITION = 10000;
@@ -71,7 +71,6 @@
         this.initButtons();
         this.panel = windowTestPanelJasmine;
         this.nodes.push(windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine);
-        this.messageParser = new MessageParser();
         dataGridTestProjectJasmine.addEventListener('afterchoose', function() {
           var selection;
           selection = dataGridTestProjectJasmine.getSelection();
@@ -239,37 +238,34 @@
         return typeof dataGridTestProjectJasmine !== "undefined" && dataGridTestProjectJasmine !== null;
       },
       parseMessage: function() {
-        var failureStacktraces, jasmineFailures, verboseSpecs;
-        if (this.messageParser.isSyntaxError(this.message)) {
+        var parsedMessage;
+        this.resetTestStatus();
+        parsedMessage = new ParsedMessage(this.message, this.projectName);
+        console.log(parsedMessage);
+        if (parsedMessage.isSyntaxError) {
           return this.handleSyntaxError();
-        }
-        jasmineFailures = this.message.match(/(.+\n.\[3[12]m[\s\S]*)Failures:\s([\s\S]*)\n+Finished/m);
-        if (jasmineFailures != null) {
-          this.resetTestStatus();
-          verboseSpecs = jasmineFailures[1];
-          failureStacktraces = jasmineFailures[2];
-          return this.handleFailures(failureStacktraces, verboseSpecs);
-        } else {
+        } else if (parsedMessage.isAllGreen) {
           return this.allSpecsPass();
+        } else if (parsedMessage.isFailure) {
+          return this.handleFailures(parsedMessage);
+        } else {
+          return console.log('Unknown message');
         }
       },
       handleSyntaxError: function() {
         return console.log('Syntax error during the execution of the tests');
       },
-      handleFailures: function(failureStacktraces, verboseSpecs) {
-        var failedTests, failures,
-          _this = this;
-        failedTests = [];
-        failures = failureStacktraces.split("\n\n");
-        failures.each(function(failure) {
-          var error;
-          error = _this.parseFailure(failure);
-          _this.specFails(error);
-          return failedTests.push(error.fileName);
-        });
-        return this.testsPassedExcept(failedTests);
+      allSpecsPass: function() {
+        return this.specsPass(this.testFiles);
       },
-      testsPassedExcept: function(failedTests) {
+      handleFailures: function(parsedMessage) {
+        var _this = this;
+        parsedMessage.errors.each(function(error) {
+          return _this.specFails(error);
+        });
+        return this.testsPassExcept(parsedMessage.failedTests);
+      },
+      testsPassExcept: function(failedTests) {
         var pass, passedTests, _i, _len, _ref;
         passedTests = [];
         _ref = this.testFiles;
@@ -280,53 +276,6 @@
           }
         }
         return this.specsPass(passedTests);
-      },
-      parseFailure: function(failure) {
-        var error, matches, message, stacktrace;
-        matches = failure.match(/Message:\s([\s\S]+?)Stacktrace:[\s\S]*?(at[\s\S]*)/m);
-        message = matches[1];
-        stacktrace = matches[2];
-        error = this.parseStackTrace(stacktrace);
-        error.message = this.sanitizeErrorMessage(message);
-        return error;
-      },
-      sanitizeErrorMessage: function(message) {
-        var matches;
-        matches = message.match(/\[31m(.+)\[\d+m/);
-        return matches[1];
-      },
-      parseStackTrace: function(stacktrace) {
-        var error, traces,
-          _this = this;
-        traces = stacktrace.split("\n");
-        error = null;
-        traces.each(function(trace) {
-          var errorLine;
-          if ((trace.indexOf('node_modules') === -1) && (trace.indexOf(_this.projectName) >= 0) && !error) {
-            errorLine = _this.parseTrace(trace);
-            return error = _this.parseError(errorLine);
-          }
-        });
-        return error;
-      },
-      parseTrace: function(trace) {
-        var errorLine;
-        errorLine = trace.match(new RegExp(this.projectName + '(.+)'))[1];
-        return errorLine.slice(0, -1);
-      },
-      parseError: function(errorLine) {
-        var error, errorParts;
-        errorParts = errorLine.split(':');
-        error = {
-          filePath: errorParts[0],
-          fileName: this.fileNameFromPath(errorParts[0]),
-          line: errorParts[1],
-          column: errorParts[2]
-        };
-        return error;
-      },
-      fileNameFromPath: function(filePath) {
-        return filePath.slice(filePath.lastIndexOf('/') + 1, filePath.indexOf('.'));
       },
       specFails: function(error) {
         var failed, _i, _len, _ref, _results;
@@ -348,6 +297,14 @@
         }
         return this.setTestStatus(failedNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + error.message);
       },
+      setTestStatus: function(node, status, msg) {
+        try {
+          apf.xmldb.setAttribute(node, "status", status);
+          return apf.xmldb.setAttribute(node, "status-message", msg || "");
+        } catch (error) {
+          return console.log("Caught bad error '" + error + "' and didn't enjoy it. Related to the damn helper specs.");
+        }
+      },
       specsPass: function(fileList) {
         var file, _i, _len, _ref, _results;
         _ref = this.findFileNodesFor(fileList);
@@ -357,10 +314,6 @@
           _results.push(this.setTestStatus(file, TEST_PASS_STATUS));
         }
         return _results;
-      },
-      allSpecsPass: function() {
-        this.resetTestStatus();
-        return this.specsPass(this.testFiles);
       },
       resetTestStatus: function() {
         var file, _i, _len, _ref, _results;
@@ -385,14 +338,6 @@
           files = model.queryNode("repo[@name='" + this.projectName + "']").children;
         }
         return files;
-      },
-      setTestStatus: function(node, status, msg) {
-        try {
-          apf.xmldb.setAttribute(node, "status", status);
-          return apf.xmldb.setAttribute(node, "status-message", msg || "");
-        } catch (error) {
-          return console.log("Caught bad error '" + error + "' and didn't enjoy it. Related to the damn helper specs.");
-        }
       },
       goToCoffee: function(node) {
         var error, livecoffee;

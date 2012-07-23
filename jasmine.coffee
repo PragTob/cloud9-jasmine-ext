@@ -9,7 +9,7 @@ define (require, exports, module) ->
   markup = require 'text!ext/jasmine/jasmine.xml'
   filelist = require 'ext/filelist/filelist'
   css = require 'text!ext/jasmine/jasmine.css'
-  {MessageParser} = require 'ext/jasmine/lib/messageParser'
+  {ParsedMessage} = require 'ext/jasmine/lib/parsedMessage'
 
   DIVIDER_POSITION = 2300
   MENU_ENTRY_POSITION = 2400
@@ -66,8 +66,6 @@ define (require, exports, module) ->
       # for the love of god do not remove, needed externally...
       @panel = windowTestPanelJasmine
       @nodes.push windowTestPanelJasmine, menuRunSettingsJasmine, stateTestRunJasmine
-      
-      @messageParser = new MessageParser()
       
       dataGridTestProjectJasmine.addEventListener 'afterchoose', =>
       	selection = dataGridTestProjectJasmine.getSelection()
@@ -207,78 +205,34 @@ define (require, exports, module) ->
     panelInitialized: -> dataGridTestProjectJasmine?
     
     parseMessage: ->
-      return @handleSyntaxError() if @messageParser.isSyntaxError @message 
-      # Ulra regex the second - the point after \n is necessary as there is a totally weird sign
-      jasmineFailures = @message.match /(.+\n.\[3[12]m[\s\S]*)Failures:\s([\s\S]*)\n+Finished/m
-      if jasmineFailures?
-        @resetTestStatus()
-        verboseSpecs = jasmineFailures[1]
-        failureStacktraces = jasmineFailures[2]
-        @handleFailures failureStacktraces, verboseSpecs
-      else
+      @resetTestStatus()
+      parsedMessage = new ParsedMessage(@message, @projectName)
+      console.log parsedMessage
+      if parsedMessage.isSyntaxError
+        @handleSyntaxError()
+      else if parsedMessage.isAllGreen
         @allSpecsPass()
+      else if parsedMessage.isFailure
+        @handleFailures(parsedMessage)
+      else
+        console.log 'Unknown message'
+        
         
     handleSyntaxError: ->
       console.log 'Syntax error during the execution of the tests'
-      # TODO: display syntax error
-        
-    handleFailures: (failureStacktraces, verboseSpecs) ->
-      # separate failures are divided by an empty line
-      failedTests = []
-      failures = failureStacktraces.split "\n\n"
-      failures.each (failure) => 
-        error = @parseFailure(failure)
-        @specFails(error)
-        failedTests.push error.fileName
-        
-      @testsPassedExcept failedTests
+      # TODO: display syntax error (maybe)
       
-    testsPassedExcept: (failedTests) ->
+    allSpecsPass: -> @specsPass @testFiles
+        
+    handleFailures: (parsedMessage) ->
+      parsedMessage.errors.each (error) => @specFails error
+      @testsPassExcept parsedMessage.failedTests
+      
+    testsPassExcept: (failedTests) ->
       passedTests = []
       passedTests.push pass for pass in @testFiles when not failedTests.contains pass
       @specsPass passedTests
     
-    parseFailure: (failure) ->
-      matches = failure.match /Message:\s([\s\S]+?)Stacktrace:[\s\S]*?(at[\s\S]*)/m
-      message = matches[1]
-      stacktrace = matches[2]
-      error = @parseStackTrace(stacktrace)
-      error.message = @sanitizeErrorMessage message
-      error
-    
-    sanitizeErrorMessage: (message) ->
-      matches = message.match /\[31m(.+)\[\d+m/
-      matches[1]
-      
-    parseStackTrace: (stacktrace) ->
-      traces = stacktrace.split "\n"
-      error = null
-      traces.each (trace) =>
-        # we don't want failures from our node_modules and only from our project
-        if (trace.indexOf('node_modules') == -1) && 
-           (trace.indexOf(@projectName) >= 0) &&
-           !error # don't go through this loop too many times
-          errorLine = @parseTrace trace
-          error = @parseError errorLine
-          
-      error
-      
-    parseTrace: (trace) ->
-      errorLine = trace.match(new RegExp(@projectName + '(.+)'))[1]
-      errorLine[0...-1] # remove the last character - \) didn't seem to work in the RegEx
-      
-    parseError: (errorLine) ->
-      errorParts = errorLine.split ':'
-      error =
-        filePath: errorParts[0]
-        fileName: @fileNameFromPath errorParts[0]
-        line: errorParts[1]
-        column: errorParts[2]
-      error
-        
-    fileNameFromPath: (filePath) ->
-      filePath[filePath.lastIndexOf('/') + 1...filePath.indexOf('.')]
-      
     
     specFails: (error) ->
        @setTestFailed failed, error for failed in @findFileNodesFor([error.fileName])
@@ -293,13 +247,16 @@ define (require, exports, module) ->
       
       @setTestStatus failedNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + error.message
       
+    setTestStatus : (node, status, msg) ->
+      try
+        apf.xmldb.setAttribute node, "status", status
+        apf.xmldb.setAttribute node, "status-message", msg || ""
+      catch error
+          console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
+      
     specsPass: (fileList) ->
       @setTestStatus file, TEST_PASS_STATUS for file in @findFileNodesFor(fileList)
     
-    allSpecsPass: ->
-      @resetTestStatus()
-      @specsPass @testFiles
-
     resetTestStatus: ->
       @setTestStatus file, TEST_RESET_STATUS, TEST_RESET_MESSAGE for file in @findFileNodesFor()
       
@@ -314,13 +271,6 @@ define (require, exports, module) ->
         files = model.queryNode("repo[@name='#{@projectName}']").children
       files
 		
-    setTestStatus : (node, status, msg) ->
-      try
-        apf.xmldb.setAttribute node, "status", status
-        apf.xmldb.setAttribute node, "status-message", msg || ""
-      catch error
-          console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
-          
     goToCoffee: (node) ->
       error =
         filePath:     node.getAttribute 'errorFilePath'
