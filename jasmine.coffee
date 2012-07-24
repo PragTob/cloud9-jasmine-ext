@@ -140,8 +140,6 @@ define (require, exports, module) ->
         item.disable() if item.disable
         
     destroy: ->
-      # stop
-      
       @nodes.each (item) -> item.destroy true, true
       @nodes = []
       
@@ -160,7 +158,6 @@ define (require, exports, module) ->
     # fileNames is a simple array containing the file names
     # without fileNames all specs are executed
     runJasmine: (fileNames) ->
-      # save the tested files for later use
       if fileNames?
       	@testFiles = fileNames
       else
@@ -169,18 +166,19 @@ define (require, exports, module) ->
         @testFiles.push @getFileNameFrom node for node in fileNodes
       	
       args = ['--coffee', '--verbose', 'spec/' ]
-      # add the regex match on fileNames
+      
       if fileNames? && fileNames.length > 0
-        matchString = '('
-        fileNames.each (name) -> matchString += name + '|'
-        
-        # replace last | with ) to complete the Regex
-        matchString = matchString[0...-1] + ')' + "\\."
-        args.push '--match', matchString
+        args.push '--match', @matchString(fileNames)
       
       @message = ''
       @registerSocketListener() unless @socketListenerRegistered
       noderunner.run(PATH_TO_JASMINE, args, false)    
+      
+    matchString: (fileNames) ->
+      matchString = '('
+      fileNames.each (name) -> matchString += name + '|'
+      # replace last | with ) to complete the Regex
+      matchString = matchString[0...-1] + ')' + "\\."
     
     runSelectedNodes: (nodes) ->
       fileNames = []

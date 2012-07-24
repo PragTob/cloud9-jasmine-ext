@@ -179,7 +179,7 @@
         }
       },
       runJasmine: function(fileNames) {
-        var args, fileNodes, matchString, node, _i, _len;
+        var args, fileNodes, node, _i, _len;
         if (fileNames != null) {
           this.testFiles = fileNames;
         } else {
@@ -192,18 +192,21 @@
         }
         args = ['--coffee', '--verbose', 'spec/'];
         if ((fileNames != null) && fileNames.length > 0) {
-          matchString = '(';
-          fileNames.each(function(name) {
-            return matchString += name + '|';
-          });
-          matchString = matchString.slice(0, -1) + ')' + "\\.";
-          args.push('--match', matchString);
+          args.push('--match', this.matchString(fileNames));
         }
         this.message = '';
         if (!this.socketListenerRegistered) {
           this.registerSocketListener();
         }
         return noderunner.run(PATH_TO_JASMINE, args, false);
+      },
+      matchString: function(fileNames) {
+        var matchString;
+        matchString = '(';
+        fileNames.each(function(name) {
+          return matchString += name + '|';
+        });
+        return matchString = matchString.slice(0, -1) + ')' + "\\.";
       },
       runSelectedNodes: function(nodes) {
         var fileNames,
