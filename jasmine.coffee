@@ -210,7 +210,6 @@ define (require, exports, module) ->
     
     parseMessage: ->
       @resetTestStatus()
-      console.log @message
       parsedMessage = new ParsedMessage(@message, @projectName)
       console.log parsedMessage
       if parsedMessage.isSyntaxError
