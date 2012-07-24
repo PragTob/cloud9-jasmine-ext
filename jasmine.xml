@@ -72,12 +72,10 @@
                 <a:item match="[file]" 
                   onclick="var ide = require('core/ide');ide.dispatchEvent('openfile', {doc: ide.createDocument(dataGridTestProjectJasmine.selected)});">Edit</a:item>
                 <a:divider />
-                <a:item match="[file|passed|failed]" onclick="dataGridTestProjectJasmine.remove()">Remove</a:item>
-                <a:divider />
                 <a:item match="[file]" onclick="
                     require('ext/tabbehaviors/tabbehaviors').revealInTree(dataGridTestProjectJasmine.selected);
                 ">Show in File Tree</a:item>
-                <a:item match="[file|repo[file]]" onclick="require('ext/jasmine/jasmine').goToCoffee(dataGridTestProjectJasmine.getSelection()[0])">Go to Coffee</a:item>
+                <a:item match="[file[failed]]" onclick="require('ext/jasmine/jasmine').goToCoffee(dataGridTestProjectJasmine.getSelection()[0])">Show Error in Coffee</a:item>
             </a:menu>
         </a:vbox>
     </a:window>
