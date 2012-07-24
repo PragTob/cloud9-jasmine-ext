@@ -112,7 +112,9 @@
           sanitizedData = data.replace(/^\./gm, "");
           sanitizedData = sanitizedData.replace(/^\/node_modules\/.*/gm, "");
           specs = sanitizedData.match(/^.*\.spec\.(js|coffee)$/gm);
-          return _this.addFiles(specs, modelTestsJasmine.queryNode("repo[1]"));
+          if (specs != null) {
+            return _this.addFiles(specs, modelTestsJasmine.queryNode("repo[1]"));
+          }
         });
       },
       addFiles: function(specs, parent) {

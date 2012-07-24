@@ -102,7 +102,7 @@ define (require, exports, module) ->
         sanitizedData = data.replace(/^\./gm, "")
         sanitizedData = sanitizedData.replace(/^\/node_modules\/.*/gm, "")
         specs = sanitizedData.match(/^.*\.spec\.(js|coffee)$/gm)
-        @addFiles(specs, modelTestsJasmine.queryNode("repo[1]"))
+        @addFiles(specs, modelTestsJasmine.queryNode("repo[1]")) if specs?
     
     addFiles: (specs, parent) -> 
       xmlFiles = ""
