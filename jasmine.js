@@ -253,6 +253,7 @@
       parseMessage: function() {
         var parsedMessage;
         this.resetTestStatus();
+        console.log(this.message);
         parsedMessage = new ParsedMessage(this.message, this.projectName);
         console.log(parsedMessage);
         if (parsedMessage.isSyntaxError) {

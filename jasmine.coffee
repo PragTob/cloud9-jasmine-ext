@@ -210,6 +210,7 @@ define (require, exports, module) ->
     
     parseMessage: ->
       @resetTestStatus()
+      console.log @message
       parsedMessage = new ParsedMessage(@message, @projectName)
       console.log parsedMessage
       if parsedMessage.isSyntaxError
@@ -249,7 +250,7 @@ define (require, exports, module) ->
         apf.createNodeFromXpath(failedNode, 'failed')
         dataGridTestProjectJasmine.reload()
       catch error
-          console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
+        console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
       
       @setTestStatus failedNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + error.message
       
