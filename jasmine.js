@@ -185,11 +185,7 @@
         if ((fileNames != null) && fileNames.length > 0) {
           args.push('--match', this.matchString(fileNames));
         }
-        this.message = '';
-        if (!this.socketListenerRegistered) {
-          this.registerSocketListener();
-        }
-        return noderunner.run(PATH_TO_JASMINE, args, false);
+        return this.executeJasmineOnNodeRunner(args);
       },
       filesToTest: function(fileNames) {
         var fileNodes, node, testFiles, _i, _len;
@@ -212,6 +208,13 @@
           return matchString += name + '|';
         });
         return matchString = matchString.slice(0, -1) + ')' + "\\.";
+      },
+      executeJasmineOnNodeRunner: function(args) {
+        this.message = '';
+        if (!this.socketListenerRegistered) {
+          this.registerSocketListener();
+        }
+        return noderunner.run(PATH_TO_JASMINE, args, false);
       },
       runSelectedNodes: function(nodes) {
         var fileNames,

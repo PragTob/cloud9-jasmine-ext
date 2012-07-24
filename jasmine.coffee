@@ -165,9 +165,7 @@ define (require, exports, module) ->
       if fileNames? && fileNames.length > 0
         args.push '--match', @matchString(fileNames)
       
-      @message = ''
-      @registerSocketListener() unless @socketListenerRegistered
-      noderunner.run(PATH_TO_JASMINE, args, false)
+      @executeJasmineOnNodeRunner args
       
     filesToTest: (fileNames) ->
       if fileNames?
@@ -183,6 +181,11 @@ define (require, exports, module) ->
       fileNames.each (name) -> matchString += name + '|'
       # replace last | with ) to complete the Regex
       matchString = matchString[0...-1] + ')' + "\\."
+      
+    executeJasmineOnNodeRunner: (args) ->
+      @message = ''
+      @registerSocketListener() unless @socketListenerRegistered
+      noderunner.run(PATH_TO_JASMINE, args, false)
     
     runSelectedNodes: (nodes) ->
       fileNames = []
