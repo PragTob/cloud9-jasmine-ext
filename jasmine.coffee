@@ -227,14 +227,14 @@ define (require, exports, module) ->
     allSpecsPass: -> @specsPass @testFiles
         
     handleFailures: (parsedMessage) ->
-      parsedMessage.specs.each (spec) => @specFails spec
+      parsedMessage.specs.each (spec) => @specFails spec if spec.passed == false
       @testsPassExcept parsedMessage.failedTests
     
     specFails: (spec) ->
        @setTestFailed failedNode, spec for failedNode in @findFileNodesFor([spec.specName])  
     
     setTestFailed: (failedNode, spec) ->
-    #  try
+      try
         error = {}
         spec.children.each (block) ->
           if block.passed == false
@@ -244,15 +244,15 @@ define (require, exports, module) ->
         apf.xmldb.setAttribute failedNode, "errorColumn", error.column
         @appendBlocksFor failedNode, spec
         @setTestStatus failedNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + error.message
-      #catch error
-       # console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
+      catch error
+        console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
       
     setTestStatus : (node, status, msg) ->
-      #try
+      try
         apf.xmldb.setAttribute node, "status", status
         apf.xmldb.setAttribute node, "status-message", msg || ""
-     # catch error
-        #  console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
+      catch error
+        console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
     
     testsPassExcept: (failedTests) ->
       passedTests = []
@@ -290,7 +290,9 @@ define (require, exports, module) ->
       model = dataGridTestProjectJasmine.$model
       files = []
       if testFiles?
-        files.push model.queryNode "//node()[@name='#{file.charAt(0).toLowerCase()+file.substring(1)}.spec.coffee']" for file in testFiles
+        for file in testFiles
+          file = file.charAt(0).toLowerCase()+file.substring(1)
+          files.push model.queryNode "//node()[@name='#{file}.spec.coffee']"
       else
         files = model.queryNode("repo[@name='#{@projectName}']").children
       files

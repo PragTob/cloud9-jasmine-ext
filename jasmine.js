@@ -272,7 +272,9 @@
       handleFailures: function(parsedMessage) {
         var _this = this;
         parsedMessage.specs.each(function(spec) {
-          return _this.specFails(spec);
+          if (spec.passed === false) {
+            return _this.specFails(spec);
+          }
         });
         return this.testsPassExcept(parsedMessage.failedTests);
       },
@@ -288,21 +290,29 @@
       },
       setTestFailed: function(failedNode, spec) {
         var error;
-        error = {};
-        spec.children.each(function(block) {
-          if (block.passed === false) {
-            return error = block.error;
-          }
-        });
-        apf.xmldb.setAttribute(failedNode, "errorFilePath", ide.davPrefix + error.filePath);
-        apf.xmldb.setAttribute(failedNode, "errorLine", error.line);
-        apf.xmldb.setAttribute(failedNode, "errorColumn", error.column);
-        this.appendBlocksFor(failedNode, spec);
-        return this.setTestStatus(failedNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + error.message);
+        try {
+          error = {};
+          spec.children.each(function(block) {
+            if (block.passed === false) {
+              return error = block.error;
+            }
+          });
+          apf.xmldb.setAttribute(failedNode, "errorFilePath", ide.davPrefix + error.filePath);
+          apf.xmldb.setAttribute(failedNode, "errorLine", error.line);
+          apf.xmldb.setAttribute(failedNode, "errorColumn", error.column);
+          this.appendBlocksFor(failedNode, spec);
+          return this.setTestStatus(failedNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + error.message);
+        } catch (error) {
+          return console.log("Caught bad error '" + error + "' and didn't enjoy it. Related to the damn helper specs.");
+        }
       },
       setTestStatus: function(node, status, msg) {
-        apf.xmldb.setAttribute(node, "status", status);
-        return apf.xmldb.setAttribute(node, "status-message", msg || "");
+        try {
+          apf.xmldb.setAttribute(node, "status", status);
+          return apf.xmldb.setAttribute(node, "status-message", msg || "");
+        } catch (error) {
+          return console.log("Caught bad error '" + error + "' and didn't enjoy it. Related to the damn helper specs.");
+        }
       },
       testsPassExcept: function(failedTests) {
         var pass, passedTests, _i, _len, _ref;
@@ -365,7 +375,8 @@
         if (testFiles != null) {
           for (_i = 0, _len = testFiles.length; _i < _len; _i++) {
             file = testFiles[_i];
-            files.push(model.queryNode("//node()[@name='" + (file.charAt(0).toLowerCase() + file.substring(1)) + ".spec.coffee']"));
+            file = file.charAt(0).toLowerCase() + file.substring(1);
+            files.push(model.queryNode("//node()[@name='" + file + ".spec.coffee']"));
           }
         } else {
           files = model.queryNode("repo[@name='" + this.projectName + "']").children;
