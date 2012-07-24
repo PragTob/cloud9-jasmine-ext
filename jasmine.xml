@@ -82,7 +82,7 @@
                   border    = "0"
                   options   = "size"
                   model     = "modelTestsJasmine"
-                  each      = "[repo|file|test|assert|error]"
+                  each      = "[repo|file|passed|failed]"
                   class     = "noscrollbar with-noise"
                   scrollbar = "sbShared 20 2 2"
                   multiselect    = "true"
@@ -106,12 +106,8 @@
                         else
                             '';
                     ?></a:column>
-                    
-                    <a:insert match="[file]" get="{return require('ext/testpanel/testpanel').parseFile(xmlNode)}" />
-                    <a:remove match="[file]" set="{require('ext/filesystem/filesystem').remove([@path])}"/>
-                    
-                    <a:expanded match="[test|file[test]]" id="expandedTestRuleJasmine" />
-                    <a:expanded match="{apf.getChildNumber(%[repo]) == 1}" />
+                    <!-- 'expanded' defines which elements should be expanded when the grid is loaded-->
+                    <a:expanded match="{apf.getChildNumber(%[repo]) == 1}" /> <!-- only the repo is expanded -->
                 </a:datagrid>
             </a:bar>
             
@@ -120,16 +116,16 @@
                       Remove could be test and assert
             -->
             <a:menu id="menuTestContextJasmine">
-                <a:item match="[test|file|repo[file]]" onclick="require('ext/jasmine/jasmine').run(dataGridTestProjectJasmine.getSelection())">Run Tests</a:item>
+                <a:item match="[file|repo[file]]" onclick="require('ext/jasmine/jasmine').run(dataGridTestProjectJasmine.getSelection())">Run Tests</a:item>
                 <a:item match="[file]" 
                   onclick="var ide = require('core/ide');ide.dispatchEvent('openfile', {doc: ide.createDocument(dataGridTestProjectJasmine.selected)});">Edit</a:item>
                 <a:divider />
-                <a:item match="[file]" onclick="datagridTestProjectJasmine.remove()">Remove</a:item>
+                <a:item match="[file|passed|failed]" onclick="dataGridTestProjectJasmine.remove()">Remove</a:item>
                 <a:divider />
                 <a:item match="[file]" onclick="
                     require('ext/tabbehaviors/tabbehaviors').revealInTree(dataGridTestProjectJasmine.selected);
                 ">Show in File Tree</a:item>
-                <a:item match="[test|file|repo[file]]" onclick="require('ext/jasmine/jasmine').goToCoffee(dataGridTestProjectJasmine.getSelection()[0])">Go to Coffee</a:item>
+                <a:item match="[file|repo[file]]" onclick="require('ext/jasmine/jasmine').goToCoffee(dataGridTestProjectJasmine.getSelection()[0])">Go to Coffee</a:item>
             </a:menu>
         </a:vbox>
     </a:window>

@@ -292,6 +292,8 @@
           apf.xmldb.setAttribute(failedNode, "errorFilePath", ide.davPrefix + error.filePath);
           apf.xmldb.setAttribute(failedNode, "errorLine", error.line);
           apf.xmldb.setAttribute(failedNode, "errorColumn", error.column);
+          apf.createNodeFromXpath(failedNode, 'failed');
+          dataGridTestProjectJasmine.reload();
         } catch (error) {
           console.log("Caught bad error '" + error + "' and didn't enjoy it. Related to the damn helper specs.");
         }
@@ -311,7 +313,9 @@
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           file = _ref[_i];
-          _results.push(this.setTestStatus(file, TEST_PASS_STATUS));
+          this.setTestStatus(file, TEST_PASS_STATUS);
+          apf.createNodeFromXpath(file, 'passed');
+          _results.push(dataGridTestProjectJasmine.reload());
         }
         return _results;
       },

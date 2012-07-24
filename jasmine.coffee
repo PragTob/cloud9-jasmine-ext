@@ -242,6 +242,8 @@ define (require, exports, module) ->
         apf.xmldb.setAttribute failedNode, "errorFilePath", ide.davPrefix + error.filePath
         apf.xmldb.setAttribute failedNode, "errorLine", error.line
         apf.xmldb.setAttribute failedNode, "errorColumn", error.column
+        apf.createNodeFromXpath(failedNode, 'failed')
+        dataGridTestProjectJasmine.reload()
       catch error
           console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
       
@@ -255,7 +257,10 @@ define (require, exports, module) ->
           console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
       
     specsPass: (fileList) ->
-      @setTestStatus file, TEST_PASS_STATUS for file in @findFileNodesFor(fileList)
+      for file in @findFileNodesFor(fileList)
+        @setTestStatus file, TEST_PASS_STATUS
+        apf.createNodeFromXpath(file, 'passed')
+        dataGridTestProjectJasmine.reload()
     
     resetTestStatus: ->
       @setTestStatus file, TEST_RESET_STATUS, TEST_RESET_MESSAGE for file in @findFileNodesFor()
