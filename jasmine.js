@@ -179,17 +179,8 @@
         }
       },
       runJasmine: function(fileNames) {
-        var args, fileNodes, node, _i, _len;
-        if (fileNames != null) {
-          this.testFiles = fileNames;
-        } else {
-          fileNodes = this.findFileNodesFor();
-          this.testFiles = [];
-          for (_i = 0, _len = fileNodes.length; _i < _len; _i++) {
-            node = fileNodes[_i];
-            this.testFiles.push(this.getFileNameFrom(node));
-          }
-        }
+        var args;
+        this.testFiles = this.filesToTest(fileNames);
         args = ['--coffee', '--verbose', 'spec/'];
         if ((fileNames != null) && fileNames.length > 0) {
           args.push('--match', this.matchString(fileNames));
@@ -199,6 +190,20 @@
           this.registerSocketListener();
         }
         return noderunner.run(PATH_TO_JASMINE, args, false);
+      },
+      filesToTest: function(fileNames) {
+        var fileNodes, node, testFiles, _i, _len;
+        if (fileNames != null) {
+          return fileNames;
+        } else {
+          fileNodes = this.findFileNodesFor();
+          testFiles = [];
+          for (_i = 0, _len = fileNodes.length; _i < _len; _i++) {
+            node = fileNodes[_i];
+            testFiles.push(this.getFileNameFrom(node));
+          }
+          return testFiles;
+        }
       },
       matchString: function(fileNames) {
         var matchString;

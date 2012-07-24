@@ -158,12 +158,7 @@ define (require, exports, module) ->
     # fileNames is a simple array containing the file names
     # without fileNames all specs are executed
     runJasmine: (fileNames) ->
-      if fileNames?
-      	@testFiles = fileNames
-      else
-        fileNodes = @findFileNodesFor()
-        @testFiles = []
-        @testFiles.push @getFileNameFrom node for node in fileNodes
+      @testFiles = @filesToTest fileNames
       	
       args = ['--coffee', '--verbose', 'spec/' ]
       
@@ -172,7 +167,16 @@ define (require, exports, module) ->
       
       @message = ''
       @registerSocketListener() unless @socketListenerRegistered
-      noderunner.run(PATH_TO_JASMINE, args, false)    
+      noderunner.run(PATH_TO_JASMINE, args, false)
+      
+    filesToTest: (fileNames) ->
+      if fileNames?
+      	fileNames
+      else
+        fileNodes = @findFileNodesFor()
+        testFiles = []
+        testFiles.push @getFileNameFrom node for node in fileNodes
+        testFiles  
       
     matchString: (fileNames) ->
       matchString = '('
