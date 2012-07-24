@@ -246,8 +246,7 @@ define (require, exports, module) ->
         apf.xmldb.setAttribute failedNode, "errorFilePath", ide.davPrefix + error.filePath
         apf.xmldb.setAttribute failedNode, "errorLine", error.line
         apf.xmldb.setAttribute failedNode, "errorColumn", error.column
-        apf.createNodeFromXpath(failedNode, 'failed')
-        dataGridTestProjectJasmine.reload()
+        @appendBlocksFor failedNode
       catch error
           console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
       
@@ -263,15 +262,26 @@ define (require, exports, module) ->
     specsPass: (fileList) ->
       for file in @findFileNodesFor(fileList)
         @setTestStatus file, TEST_PASS_STATUS
-        apf.createNodeFromXpath(file, 'passed')
-        dataGridTestProjectJasmine.reload()
+        @appendBlocksFor file
+    
+    appendBlocksFor: (node) ->
+      ownerDocument = node.ownerDocument
+      # get all blocks for the node
+      # append the blocks to the node (consider pass/fail of block)
+      passed = ownerDocument.createElement("passed")
+      passed.setAttribute("name", 'passedBlock')
+      node.appendChild(passed)
+      dataGridTestProjectJasmine.reload()
     
     resetTestStatus: ->
       for file in @findFileNodesFor()
         @setTestStatus file, TEST_RESET_STATUS, TEST_RESET_MESSAGE
-        file.removeChild(child) for child in file.children
-        dataGridTestProjectJasmine.reload()
-      
+        @removeBlocksFor file
+    
+    removeBlocksFor: (node) ->
+      node.removeChild(child) for child in node.children
+      dataGridTestProjectJasmine.reload()
+          
     # leaving input empty leads to return of
     # all file nodes of the project
     findFileNodesFor: (testFiles) ->
