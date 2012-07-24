@@ -115,7 +115,7 @@ define (require, exports, module) ->
       modelTestsJasmine.insert "<files>" + xmlFiles + "</files>", {insertPoint : parent}
       
     addFileSaveListener: ->
-      ide.addEventListener 'addFileSaveListener', (event) =>
+      ide.addEventListener 'afterfilesave', (event) =>
         name = @getFileNameFrom event.node
         @runJasmine [name]
         
@@ -158,10 +158,9 @@ define (require, exports, module) ->
     # fileNames is a simple array containing the file names
     # without fileNames all specs are executed
     runJasmine: (fileNames) ->
-      @testFiles = @filesToTest fileNames
-      	
       args = ['--coffee', '--verbose', 'spec/' ]
-      
+
+      @testFiles = @filesToTest fileNames
       if fileNames? && fileNames.length > 0
         args.push '--match', @matchString(fileNames)
       

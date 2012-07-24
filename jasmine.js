@@ -127,7 +127,7 @@
       },
       addFileSaveListener: function() {
         var _this = this;
-        return ide.addEventListener('addFileSaveListener', function(event) {
+        return ide.addEventListener('afterfilesave', function(event) {
           var name;
           name = _this.getFileNameFrom(event.node);
           return _this.runJasmine([name]);
@@ -180,8 +180,8 @@
       },
       runJasmine: function(fileNames) {
         var args;
-        this.testFiles = this.filesToTest(fileNames);
         args = ['--coffee', '--verbose', 'spec/'];
+        this.testFiles = this.filesToTest(fileNames);
         if ((fileNames != null) && fileNames.length > 0) {
           args.push('--match', this.matchString(fileNames));
         }
