@@ -16,6 +16,7 @@ class ParsedMessage
     @isSyntaxError = false
     @isAllGreen = false
     @isFailure = false
+    @errorIndex = 0 # index in the errors for now, afterwards we pop or something
     @parse(message)
     
   parse: (message) ->
@@ -75,6 +76,7 @@ class ParsedMessage
     else
       passed = false
       spec.passed = false
+      error = @findCorrespondingError(message)
     
     itBlock =
       message: message
@@ -82,6 +84,12 @@ class ParsedMessage
       type: IT_TYPE
       error: error
     spec.children.push itBlock
+    
+  findCorrespondingError: (message) ->
+    console.log @errors 
+    match = @errors[@errorIndex]
+    @errorIndex++
+    match
     
   addDescribeBlock: (line, spec) ->
     return if line == ""
