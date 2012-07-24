@@ -266,6 +266,7 @@ define (require, exports, module) ->
     
     appendBlocksFor: (node) ->
       ownerDocument = node.ownerDocument
+      # TODO:
       # get all blocks for the node
       # append the blocks to the node (consider pass/fail of block)
       passed = ownerDocument.createElement("passed")
@@ -295,10 +296,10 @@ define (require, exports, module) ->
 		
     goToCoffee: (node) ->
       error =
-        filePath:     node.getAttribute 'errorFilePath'
+        filePath: node.getAttribute 'errorFilePath'
         line:    node.getAttribute 'errorLine'
         column:  node.getAttribute 'errorColumn'
-      livecoffee = require 'ext/livecoffee/livecoffee'
-      livecoffee.show(error.filePath, error.line, error.column)
+      ide.dispatchEvent('openfile', {doc: ide.createDocument(require("ext/filesystem/filesystem").createFileNodeFromPath(error.filePath))})
+      ide.dispatchEvent('livecoffee_show_file', {line: error.line})
 
     jasmine: -> @runJasmine()

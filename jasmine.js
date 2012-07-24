@@ -373,14 +373,18 @@
         return files;
       },
       goToCoffee: function(node) {
-        var error, livecoffee;
+        var error;
         error = {
           filePath: node.getAttribute('errorFilePath'),
           line: node.getAttribute('errorLine'),
           column: node.getAttribute('errorColumn')
         };
-        livecoffee = require('ext/livecoffee/livecoffee');
-        return livecoffee.show(error.filePath, error.line, error.column);
+        ide.dispatchEvent('openfile', {
+          doc: ide.createDocument(require("ext/filesystem/filesystem").createFileNodeFromPath(error.filePath))
+        });
+        return ide.dispatchEvent('livecoffee_show_file', {
+          line: error.line
+        });
       },
       jasmine: function() {
         return this.runJasmine();
