@@ -299,6 +299,6 @@ define (require, exports, module) ->
         line:    node.getAttribute 'errorLine'
         column:  node.getAttribute 'errorColumn'
       livecoffee = require 'ext/livecoffee/livecoffee'
-      livecoffee.show(node, error.line, error.column)
+      livecoffee.show(error.filePath, error.line, error.column)
 
     jasmine: -> @runJasmine()

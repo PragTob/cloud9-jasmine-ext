@@ -380,7 +380,7 @@
           column: node.getAttribute('errorColumn')
         };
         livecoffee = require('ext/livecoffee/livecoffee');
-        return livecoffee.show(node, error.line, error.column);
+        return livecoffee.show(error.filePath, error.line, error.column);
       },
       jasmine: function() {
         return this.runJasmine();
