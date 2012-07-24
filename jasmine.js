@@ -94,9 +94,7 @@
         }
       },
       initButtons: function() {
-        buttonTestRunJasmine.$ext.setAttribute("class", "light-dropdown");
-        buttonTestStopJasmine.$ext.setAttribute("class", buttonTestStopJasmine.$ext.getAttribute("class") + " buttonTestStopJasmine");
-        return windowTestPanelJasmine.$ext.setAttribute("class", windowTestPanelJasmine.$ext.getAttribute("class") + " testpanelJasmine");
+        return windowTestPanelJasmine.$ext.setAttribute("class", windowTestPanelJasmine.$ext.getAttribute("class") + " testpanel");
       },
       setRepoName: function() {
         this.projectName = this.getProjectName();
@@ -305,8 +303,7 @@
           apf.xmldb.setAttribute(failedNode, "errorFilePath", ide.davPrefix + error.filePath);
           apf.xmldb.setAttribute(failedNode, "errorLine", error.line);
           apf.xmldb.setAttribute(failedNode, "errorColumn", error.column);
-          apf.createNodeFromXpath(failedNode, 'failed');
-          dataGridTestProjectJasmine.reload();
+          this.appendBlocksFor(failedNode);
         } catch (error) {
           console.log("Caught bad error '" + error + "' and didn't enjoy it. Related to the damn helper specs.");
         }
@@ -327,26 +324,37 @@
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           file = _ref[_i];
           this.setTestStatus(file, TEST_PASS_STATUS);
-          apf.createNodeFromXpath(file, 'passed');
-          _results.push(dataGridTestProjectJasmine.reload());
+          _results.push(this.appendBlocksFor(file));
         }
         return _results;
       },
+      appendBlocksFor: function(node) {
+        var ownerDocument, passed;
+        ownerDocument = node.ownerDocument;
+        passed = ownerDocument.createElement("passed");
+        passed.setAttribute("name", 'passedBlock');
+        node.appendChild(passed);
+        return dataGridTestProjectJasmine.reload();
+      },
       resetTestStatus: function() {
-        var child, file, _i, _j, _len, _len1, _ref, _ref1, _results;
+        var file, _i, _len, _ref, _results;
         _ref = this.findFileNodesFor();
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           file = _ref[_i];
           this.setTestStatus(file, TEST_RESET_STATUS, TEST_RESET_MESSAGE);
-          _ref1 = file.children;
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            child = _ref1[_j];
-            file.removeChild(child);
-          }
-          _results.push(dataGridTestProjectJasmine.reload());
+          _results.push(this.removeBlocksFor(file));
         }
         return _results;
+      },
+      removeBlocksFor: function(node) {
+        var child, _i, _len, _ref;
+        _ref = node.children;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          child = _ref[_i];
+          node.removeChild(child);
+        }
+        return dataGridTestProjectJasmine.reload();
       },
       findFileNodesFor: function(testFiles) {
         var file, files, model, _i, _len;
@@ -363,14 +371,18 @@
         return files;
       },
       goToCoffee: function(node) {
-        var error, livecoffee;
+        var error;
         error = {
           filePath: node.getAttribute('errorFilePath'),
           line: node.getAttribute('errorLine'),
           column: node.getAttribute('errorColumn')
         };
-        livecoffee = require('ext/livecoffee/livecoffee');
-        return livecoffee.show(node, error.line, error.column);
+        ide.dispatchEvent('openfile', {
+          doc: ide.createDocument(require("ext/filesystem/filesystem").createFileNodeFromPath(error.filePath))
+        });
+        return ide.dispatchEvent('livecoffee_show_file', {
+          line: error.line
+        });
       },
       jasmine: function() {
         return this.runJasmine();
