@@ -268,7 +268,10 @@ define (require, exports, module) ->
       for block in spec.children
         blockNode = ownerDocument.createElement("failed")
         blockNode.setAttribute("name", "#{block.type}: #{block.message}")
-        @setTestStatus blockNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + block.error?.message if block.passed == false
+        if block.passed
+          @setTestStatus blockNode, TEST_PASS_STATUS
+        else
+          @setTestStatus blockNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + block.error.message
         node.appendChild(blockNode)
       dataGridTestProjectJasmine.reload()
     
