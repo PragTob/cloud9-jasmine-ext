@@ -227,59 +227,62 @@ define (require, exports, module) ->
     allSpecsPass: -> @specsPass @testFiles
         
     handleFailures: (parsedMessage) ->
-      parsedMessage.errors.each (error) => @specFails error
+      parsedMessage.specs.each (spec) => @specFails spec
       @testsPassExcept parsedMessage.failedTests
+    
+    specFails: (spec) ->
+       @setTestFailed failedNode, spec for failedNode in @findFileNodesFor([spec.specName])  
+    
+    setTestFailed: (failedNode, spec) ->
+    #  try
+        error = {}
+        spec.children.each (block) ->
+          if block.passed == false
+            error = block.error
+        apf.xmldb.setAttribute failedNode, "errorFilePath", ide.davPrefix + error.filePath
+        apf.xmldb.setAttribute failedNode, "errorLine", error.line
+        apf.xmldb.setAttribute failedNode, "errorColumn", error.column
+        @appendBlocksFor failedNode, spec
+        @setTestStatus failedNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + error.message
+      #catch error
+       # console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
       
+    setTestStatus : (node, status, msg) ->
+      #try
+        apf.xmldb.setAttribute node, "status", status
+        apf.xmldb.setAttribute node, "status-message", msg || ""
+     # catch error
+        #  console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
+    
     testsPassExcept: (failedTests) ->
       passedTests = []
       passedTests.push pass for pass in @testFiles when not failedTests.contains pass
       @specsPass passedTests
-    
-    
-    specFails: (error) ->
-       @setTestFailed failed, error for failed in @findFileNodesFor([error.fileName])
-      
-    setTestFailed: (failedNode, error) ->
-      try
-        apf.xmldb.setAttribute failedNode, "errorFilePath", ide.davPrefix + error.filePath
-        apf.xmldb.setAttribute failedNode, "errorLine", error.line
-        apf.xmldb.setAttribute failedNode, "errorColumn", error.column
-        @appendBlocksFor failedNode
-      catch error
-        console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
-      
-      @setTestStatus failedNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + error.message
-      
-    setTestStatus : (node, status, msg) ->
-      try
-        apf.xmldb.setAttribute node, "status", status
-        apf.xmldb.setAttribute node, "status-message", msg || ""
-      catch error
-          console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
-      
+        
     specsPass: (fileList) ->
       for file in @findFileNodesFor(fileList)
         @setTestStatus file, TEST_PASS_STATUS
-        @appendBlocksFor file
     
-    appendBlocksFor: (node) ->
+    appendBlocksFor: (node, spec) ->
       ownerDocument = node.ownerDocument
       # TODO:
       # get all blocks for the node
       # append the blocks to the node (consider pass/fail of block)
-      passed = ownerDocument.createElement("passed")
-      passed.setAttribute("name", 'passedBlock')
-      node.appendChild(passed)
+      for block in spec.children
+        passed = ownerDocument.createElement("failed")
+        passed.setAttribute("name", "#{block.type}: #{block.message}")
+        node.appendChild(passed)
       dataGridTestProjectJasmine.reload()
     
     resetTestStatus: ->
       for file in @findFileNodesFor()
         @setTestStatus file, TEST_RESET_STATUS, TEST_RESET_MESSAGE
         @removeBlocksFor file
+      dataGridTestProjectJasmine.reload()
     
     removeBlocksFor: (node) ->
-      node.removeChild(child) for child in node.children
-      dataGridTestProjectJasmine.reload()
+      if node.children?
+         node.removeChild node.firstChild while node.childNodes.length >= 1
           
     # leaving input empty leads to return of
     # all file nodes of the project
@@ -287,7 +290,7 @@ define (require, exports, module) ->
       model = dataGridTestProjectJasmine.$model
       files = []
       if testFiles?
-        files.push model.queryNode "//node()[@name='#{file}.spec.coffee']" for file in testFiles
+        files.push model.queryNode "//node()[@name='#{file.charAt(0).toLowerCase()+file.substring(1)}.spec.coffee']" for file in testFiles
       else
         files = model.queryNode("repo[@name='#{@projectName}']").children
       files

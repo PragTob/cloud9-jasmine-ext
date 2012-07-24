@@ -271,10 +271,38 @@
       },
       handleFailures: function(parsedMessage) {
         var _this = this;
-        parsedMessage.errors.each(function(error) {
-          return _this.specFails(error);
+        parsedMessage.specs.each(function(spec) {
+          return _this.specFails(spec);
         });
         return this.testsPassExcept(parsedMessage.failedTests);
+      },
+      specFails: function(spec) {
+        var failedNode, _i, _len, _ref, _results;
+        _ref = this.findFileNodesFor([spec.specName]);
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          failedNode = _ref[_i];
+          _results.push(this.setTestFailed(failedNode, spec));
+        }
+        return _results;
+      },
+      setTestFailed: function(failedNode, spec) {
+        var error;
+        error = {};
+        spec.children.each(function(block) {
+          if (block.passed === false) {
+            return error = block.error;
+          }
+        });
+        apf.xmldb.setAttribute(failedNode, "errorFilePath", ide.davPrefix + error.filePath);
+        apf.xmldb.setAttribute(failedNode, "errorLine", error.line);
+        apf.xmldb.setAttribute(failedNode, "errorColumn", error.column);
+        this.appendBlocksFor(failedNode, spec);
+        return this.setTestStatus(failedNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + error.message);
+      },
+      setTestStatus: function(node, status, msg) {
+        apf.xmldb.setAttribute(node, "status", status);
+        return apf.xmldb.setAttribute(node, "status-message", msg || "");
       },
       testsPassExcept: function(failedTests) {
         var pass, passedTests, _i, _len, _ref;
@@ -288,73 +316,47 @@
         }
         return this.specsPass(passedTests);
       },
-      specFails: function(error) {
-        var failed, _i, _len, _ref, _results;
-        _ref = this.findFileNodesFor([error.fileName]);
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          failed = _ref[_i];
-          _results.push(this.setTestFailed(failed, error));
-        }
-        return _results;
-      },
-      setTestFailed: function(failedNode, error) {
-        try {
-          apf.xmldb.setAttribute(failedNode, "errorFilePath", ide.davPrefix + error.filePath);
-          apf.xmldb.setAttribute(failedNode, "errorLine", error.line);
-          apf.xmldb.setAttribute(failedNode, "errorColumn", error.column);
-          this.appendBlocksFor(failedNode);
-        } catch (error) {
-          console.log("Caught bad error '" + error + "' and didn't enjoy it. Related to the damn helper specs.");
-        }
-        return this.setTestStatus(failedNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + error.message);
-      },
-      setTestStatus: function(node, status, msg) {
-        try {
-          apf.xmldb.setAttribute(node, "status", status);
-          return apf.xmldb.setAttribute(node, "status-message", msg || "");
-        } catch (error) {
-          return console.log("Caught bad error '" + error + "' and didn't enjoy it. Related to the damn helper specs.");
-        }
-      },
       specsPass: function(fileList) {
         var file, _i, _len, _ref, _results;
         _ref = this.findFileNodesFor(fileList);
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           file = _ref[_i];
-          this.setTestStatus(file, TEST_PASS_STATUS);
-          _results.push(this.appendBlocksFor(file));
+          _results.push(this.setTestStatus(file, TEST_PASS_STATUS));
         }
         return _results;
       },
-      appendBlocksFor: function(node) {
-        var ownerDocument, passed;
+      appendBlocksFor: function(node, spec) {
+        var block, ownerDocument, passed, _i, _len, _ref;
         ownerDocument = node.ownerDocument;
-        passed = ownerDocument.createElement("passed");
-        passed.setAttribute("name", 'passedBlock');
-        node.appendChild(passed);
+        _ref = spec.children;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          block = _ref[_i];
+          passed = ownerDocument.createElement("failed");
+          passed.setAttribute("name", "" + block.type + ": " + block.message);
+          node.appendChild(passed);
+        }
         return dataGridTestProjectJasmine.reload();
       },
       resetTestStatus: function() {
-        var file, _i, _len, _ref, _results;
+        var file, _i, _len, _ref;
         _ref = this.findFileNodesFor();
-        _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           file = _ref[_i];
           this.setTestStatus(file, TEST_RESET_STATUS, TEST_RESET_MESSAGE);
-          _results.push(this.removeBlocksFor(file));
-        }
-        return _results;
-      },
-      removeBlocksFor: function(node) {
-        var child, _i, _len, _ref;
-        _ref = node.children;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          child = _ref[_i];
-          node.removeChild(child);
+          this.removeBlocksFor(file);
         }
         return dataGridTestProjectJasmine.reload();
+      },
+      removeBlocksFor: function(node) {
+        var _results;
+        if (node.children != null) {
+          _results = [];
+          while (node.childNodes.length >= 1) {
+            _results.push(node.removeChild(node.firstChild));
+          }
+          return _results;
+        }
       },
       findFileNodesFor: function(testFiles) {
         var file, files, model, _i, _len;
@@ -363,7 +365,7 @@
         if (testFiles != null) {
           for (_i = 0, _len = testFiles.length; _i < _len; _i++) {
             file = testFiles[_i];
-            files.push(model.queryNode("//node()[@name='" + file + ".spec.coffee']"));
+            files.push(model.queryNode("//node()[@name='" + (file.charAt(0).toLowerCase() + file.substring(1)) + ".spec.coffee']"));
           }
         } else {
           files = model.queryNode("repo[@name='" + this.projectName + "']").children;

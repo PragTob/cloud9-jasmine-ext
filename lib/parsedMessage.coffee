@@ -30,6 +30,7 @@ class ParsedMessage
   parseTestResults: (message) ->
     jasmineFailures = @parseFailures(message)
     if jasmineFailures?
+      @failedTests = []
       @isFailure = true
       verboseSpecs = jasmineFailures[1]
       failureStacktraces = jasmineFailures[2]
@@ -76,6 +77,7 @@ class ParsedMessage
     else
       passed = false
       spec.passed = false
+      @failedTests.push spec.specName
       error = @findCorrespondingError(message)
     
     itBlock =
@@ -120,12 +122,10 @@ class ParsedMessage
     
   extractErrorInformation: (failureStacktraces) ->
     @errors = []
-    @failedTests = []
     failures = failureStacktraces.split "\n\n"
     failures.each (failure) => 
       error = @parseFailure(failure)
       @errors.push error
-      @failedTests.push error.fileName
       
   parseFailure: (failure) ->
     matches = failure.match /Message:\s([\s\S]+?)Stacktrace:[\s\S]*?(at[\s\S]*)/m
