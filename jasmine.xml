@@ -55,7 +55,7 @@
                             <span style='color:green'>\[PASS{[@status-message] and " [@status-message]"}\]</span>
                         else if ([@status] == '-1')
                             <span>\[{[@status-message].uCaseFirst()}\]</span>
-                        else
+                        else                            
                             '';
                     ?></a:column>
                     <!-- 'expanded' defines which elements should be expanded when the grid is loaded-->

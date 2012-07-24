@@ -337,14 +337,17 @@
         return _results;
       },
       appendBlocksFor: function(node, spec) {
-        var block, ownerDocument, passed, _i, _len, _ref;
+        var block, blockNode, ownerDocument, _i, _len, _ref, _ref1;
         ownerDocument = node.ownerDocument;
         _ref = spec.children;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           block = _ref[_i];
-          passed = ownerDocument.createElement("failed");
-          passed.setAttribute("name", "" + block.type + ": " + block.message);
-          node.appendChild(passed);
+          blockNode = ownerDocument.createElement("failed");
+          blockNode.setAttribute("name", "" + block.type + ": " + block.message);
+          if (block.passed === false) {
+            this.setTestStatus(blockNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + ((_ref1 = block.error) != null ? _ref1.message : void 0));
+          }
+          node.appendChild(blockNode);
         }
         return dataGridTestProjectJasmine.reload();
       },

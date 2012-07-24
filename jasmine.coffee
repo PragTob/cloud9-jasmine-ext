@@ -265,13 +265,11 @@ define (require, exports, module) ->
     
     appendBlocksFor: (node, spec) ->
       ownerDocument = node.ownerDocument
-      # TODO:
-      # get all blocks for the node
-      # append the blocks to the node (consider pass/fail of block)
       for block in spec.children
-        passed = ownerDocument.createElement("failed")
-        passed.setAttribute("name", "#{block.type}: #{block.message}")
-        node.appendChild(passed)
+        blockNode = ownerDocument.createElement("failed")
+        blockNode.setAttribute("name", "#{block.type}: #{block.message}")
+        @setTestStatus blockNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + block.error?.message if block.passed == false
+        node.appendChild(blockNode)
       dataGridTestProjectJasmine.reload()
     
     resetTestStatus: ->
