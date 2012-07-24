@@ -112,7 +112,9 @@
           sanitizedData = data.replace(/^\./gm, "");
           sanitizedData = sanitizedData.replace(/^\/node_modules\/.*/gm, "");
           specs = sanitizedData.match(/^.*\.spec\.(js|coffee)$/gm);
-          return _this.addFiles(specs, modelTestsJasmine.queryNode("repo[1]"));
+          if (specs != null) {
+            return _this.addFiles(specs, modelTestsJasmine.queryNode("repo[1]"));
+          }
         });
       },
       addFiles: function(specs, parent) {
@@ -127,7 +129,7 @@
       },
       addFileSaveListener: function() {
         var _this = this;
-        return ide.addEventListener('addFileSaveListener', function(event) {
+        return ide.addEventListener('afterfilesave', function(event) {
           var name;
           name = _this.getFileNameFrom(event.node);
           return _this.runJasmine([name]);
@@ -179,26 +181,37 @@
         }
       },
       runJasmine: function(fileNames) {
-        var args, fileNodes, matchString, node, _i, _len;
+        var args;
+        args = ['--coffee', '--verbose', 'spec/'];
+        this.testFiles = this.filesToTest(fileNames);
+        if ((fileNames != null) && fileNames.length > 0) {
+          args.push('--match', this.matchString(fileNames));
+        }
+        return this.executeJasmineOnNodeRunner(args);
+      },
+      filesToTest: function(fileNames) {
+        var fileNodes, node, testFiles, _i, _len;
         if (fileNames != null) {
-          this.testFiles = fileNames;
+          return fileNames;
         } else {
           fileNodes = this.findFileNodesFor();
-          this.testFiles = [];
+          testFiles = [];
           for (_i = 0, _len = fileNodes.length; _i < _len; _i++) {
             node = fileNodes[_i];
-            this.testFiles.push(this.getFileNameFrom(node));
+            testFiles.push(this.getFileNameFrom(node));
           }
+          return testFiles;
         }
-        args = ['--coffee', '--verbose', 'spec/'];
-        if ((fileNames != null) && fileNames.length > 0) {
-          matchString = '(';
-          fileNames.each(function(name) {
-            return matchString += name + '|';
-          });
-          matchString = matchString.slice(0, -1) + ')' + "\\.";
-          args.push('--match', matchString);
-        }
+      },
+      matchString: function(fileNames) {
+        var matchString;
+        matchString = '(';
+        fileNames.each(function(name) {
+          return matchString += name + '|';
+        });
+        return matchString = matchString.slice(0, -1) + ')' + "\\.";
+      },
+      executeJasmineOnNodeRunner: function(args) {
         this.message = '';
         if (!this.socketListenerRegistered) {
           this.registerSocketListener();

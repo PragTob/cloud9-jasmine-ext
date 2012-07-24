@@ -102,7 +102,7 @@ define (require, exports, module) ->
         sanitizedData = data.replace(/^\./gm, "")
         sanitizedData = sanitizedData.replace(/^\/node_modules\/.*/gm, "")
         specs = sanitizedData.match(/^.*\.spec\.(js|coffee)$/gm)
-        @addFiles(specs, modelTestsJasmine.queryNode("repo[1]"))
+        @addFiles(specs, modelTestsJasmine.queryNode("repo[1]")) if specs?
     
     addFiles: (specs, parent) -> 
       xmlFiles = ""
@@ -115,7 +115,7 @@ define (require, exports, module) ->
       modelTestsJasmine.insert "<files>" + xmlFiles + "</files>", {insertPoint : parent}
       
     addFileSaveListener: ->
-      ide.addEventListener 'addFileSaveListener', (event) =>
+      ide.addEventListener 'afterfilesave', (event) =>
         name = @getFileNameFrom event.node
         @runJasmine [name]
         
@@ -140,8 +140,6 @@ define (require, exports, module) ->
         item.disable() if item.disable
         
     destroy: ->
-      # stop
-      
       @nodes.each (item) -> item.destroy true, true
       @nodes = []
       
@@ -160,27 +158,33 @@ define (require, exports, module) ->
     # fileNames is a simple array containing the file names
     # without fileNames all specs are executed
     runJasmine: (fileNames) ->
-      # save the tested files for later use
+      args = ['--coffee', '--verbose', 'spec/' ]
+
+      @testFiles = @filesToTest fileNames
+      if fileNames? && fileNames.length > 0
+        args.push '--match', @matchString(fileNames)
+      
+      @executeJasmineOnNodeRunner args
+      
+    filesToTest: (fileNames) ->
       if fileNames?
-      	@testFiles = fileNames
+      	fileNames
       else
         fileNodes = @findFileNodesFor()
-        @testFiles = []
-        @testFiles.push @getFileNameFrom node for node in fileNodes
-      	
-      args = ['--coffee', '--verbose', 'spec/' ]
-      # add the regex match on fileNames
-      if fileNames? && fileNames.length > 0
-        matchString = '('
-        fileNames.each (name) -> matchString += name + '|'
-        
-        # replace last | with ) to complete the Regex
-        matchString = matchString[0...-1] + ')' + "\\."
-        args.push '--match', matchString
+        testFiles = []
+        testFiles.push @getFileNameFrom node for node in fileNodes
+        testFiles  
       
+    matchString: (fileNames) ->
+      matchString = '('
+      fileNames.each (name) -> matchString += name + '|'
+      # replace last | with ) to complete the Regex
+      matchString = matchString[0...-1] + ')' + "\\."
+      
+    executeJasmineOnNodeRunner: (args) ->
       @message = ''
       @registerSocketListener() unless @socketListenerRegistered
-      noderunner.run(PATH_TO_JASMINE, args, false)    
+      noderunner.run(PATH_TO_JASMINE, args, false)
     
     runSelectedNodes: (nodes) ->
       fileNames = []
