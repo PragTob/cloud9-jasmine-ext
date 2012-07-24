@@ -87,9 +87,7 @@ define (require, exports, module) ->
         true
       
     initButtons: ->
-      buttonTestRunJasmine.$ext.setAttribute("class", "light-dropdown")
-      buttonTestStopJasmine.$ext.setAttribute("class", buttonTestStopJasmine.$ext.getAttribute("class") + " buttonTestStopJasmine")
-      windowTestPanelJasmine.$ext.setAttribute("class", windowTestPanelJasmine.$ext.getAttribute("class") + " testpanelJasmine")
+      windowTestPanelJasmine.$ext.setAttribute("class", windowTestPanelJasmine.$ext.getAttribute("class") + " testpanel")
       
     # bad bad hack, Cloud9 danke.
     setRepoName: ->

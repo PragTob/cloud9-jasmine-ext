@@ -94,9 +94,7 @@
         }
       },
       initButtons: function() {
-        buttonTestRunJasmine.$ext.setAttribute("class", "light-dropdown");
-        buttonTestStopJasmine.$ext.setAttribute("class", buttonTestStopJasmine.$ext.getAttribute("class") + " buttonTestStopJasmine");
-        return windowTestPanelJasmine.$ext.setAttribute("class", windowTestPanelJasmine.$ext.getAttribute("class") + " testpanelJasmine");
+        return windowTestPanelJasmine.$ext.setAttribute("class", windowTestPanelJasmine.$ext.getAttribute("class") + " testpanel");
       },
       setRepoName: function() {
         this.projectName = this.getProjectName();
