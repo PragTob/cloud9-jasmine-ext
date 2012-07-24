@@ -334,12 +334,18 @@
         return _results;
       },
       resetTestStatus: function() {
-        var file, _i, _len, _ref, _results;
+        var child, file, _i, _j, _len, _len1, _ref, _ref1, _results;
         _ref = this.findFileNodesFor();
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           file = _ref[_i];
-          _results.push(this.setTestStatus(file, TEST_RESET_STATUS, TEST_RESET_MESSAGE));
+          this.setTestStatus(file, TEST_RESET_STATUS, TEST_RESET_MESSAGE);
+          _ref1 = file.children;
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            child = _ref1[_j];
+            file.removeChild(child);
+          }
+          _results.push(dataGridTestProjectJasmine.reload());
         }
         return _results;
       },

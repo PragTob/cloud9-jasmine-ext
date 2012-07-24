@@ -268,7 +268,10 @@ define (require, exports, module) ->
         dataGridTestProjectJasmine.reload()
     
     resetTestStatus: ->
-      @setTestStatus file, TEST_RESET_STATUS, TEST_RESET_MESSAGE for file in @findFileNodesFor()
+      for file in @findFileNodesFor()
+        @setTestStatus file, TEST_RESET_STATUS, TEST_RESET_MESSAGE
+        file.removeChild(child) for child in file.children
+        dataGridTestProjectJasmine.reload()
       
     # leaving input empty leads to return of
     # all file nodes of the project
