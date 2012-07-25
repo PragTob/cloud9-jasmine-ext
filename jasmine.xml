@@ -75,7 +75,7 @@
                 <a:item match="[file]" onclick="
                     require('ext/tabbehaviors/tabbehaviors').revealInTree(dataGridTestProjectJasmine.selected);
                 ">Show in File Tree</a:item>
-                <a:item match="[file[failed]]" onclick="require('ext/jasmine/jasmine').goToCoffee(dataGridTestProjectJasmine.getSelection()[0])">Show Error in Coffee</a:item>
+                <a:item match="[failed]" onclick="require('ext/jasmine/jasmine').goToCoffee(dataGridTestProjectJasmine.getSelection()[0])">Show Error in Coffee</a:item>
             </a:menu>
         </a:vbox>
     </a:window>

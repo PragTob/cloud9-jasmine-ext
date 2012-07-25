@@ -14,8 +14,7 @@ class ParsedMessage
   constructor: (message, projectName) ->
     @projectName = projectName
     @isSyntaxError = false
-    @isAllGreen = false
-    @isFailure = false
+    @isSpecs = false
     @errorIndex = 0 # index in the errors for now, afterwards we pop or something
     @parse(message)
     
@@ -31,23 +30,18 @@ class ParsedMessage
     jasmineFailures = @parseFailures(message)
     if jasmineFailures?
       @failedTests = []
-      @isFailure = true
+      @isSpecs = true
       verboseSpecs = jasmineFailures[1]
       failureStacktraces = jasmineFailures[2]
       @extractFailureInformation verboseSpecs, failureStacktraces
-    else
-      @isAllGreen = true
       
   extractFailureInformation: (verboseSpecs, failureStacktraces) ->
-    console.log verboseSpecs
-    console.log failureStacktraces
     @extractErrorInformation failureStacktraces
     @specs = []
     lines = verboseSpecs.split "\n"
     for line in lines
       if match = line.match /^(\w+)/
         specName = match[1]
-        console.log specName
         spec =
           specName: specName
           children: []
@@ -94,12 +88,8 @@ class ParsedMessage
     match
     
   addDescribeBlock: (line, spec) ->
-    return if line == ""
-    message = line.match(/\s*([\s\S]+)/)[1]
-    describeBlock =
-      message: message
-      type: DESCRIBE_TYPE
-    spec.children.push describeBlock
+    console.log 'Ignoring describes for now'
+    null
      
   isPassedSpec: (line) ->
     line.indexOf(IT_BLOCK_START + PASSED_IT_BLOCK) != -1

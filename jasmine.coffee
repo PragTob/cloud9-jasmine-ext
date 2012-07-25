@@ -168,7 +168,7 @@ define (require, exports, module) ->
       if fileNames?
       	fileNames
       else
-        fileNodes = @findFileNodesFor()
+        fileNodes = @getAllFileNodes()
         testFiles = []
         testFiles.push @getFileNameFrom node for node in fileNodes
         testFiles  
@@ -212,41 +212,34 @@ define (require, exports, module) ->
       console.log parsedMessage
       if parsedMessage.isSyntaxError
         @handleSyntaxError()
-      else if parsedMessage.isAllGreen
-        @allSpecsPass()
-      else if parsedMessage.isFailure
-        @handleFailures(parsedMessage)
+      else if parsedMessage.isSpecs
+        @handleSpecs(parsedMessage)
       else
-        console.log 'Unknown message'
+        console.log 'unknown message'
         
         
     handleSyntaxError: ->
       console.log 'Syntax error during the execution of the tests'
       # TODO: display syntax error (maybe)
       
-    allSpecsPass: -> @specsPass @testFiles
+    handleSpecs: (parsedMessage) ->
+      parsedMessage.specs.each (spec) => 
+        if spec.passed
+          @specPasses spec
+        else
+          @specFails spec
+        @appendBlocksFor spec
         
-    handleFailures: (parsedMessage) ->
-      parsedMessage.specs.each (spec) => @specFails spec if spec.passed == false
-      @testsPassExcept parsedMessage.failedTests
+      dataGridTestProjectJasmine.reload()
+                  
+    specPasses: (spec) ->
+      fileNode = @findFileNodeFor(spec.specName)
+      @setTestStatus fileNode, TEST_PASS_STATUS
     
     specFails: (spec) ->
-       @setTestFailed failedNode, spec for failedNode in @findFileNodesFor([spec.specName])  
+       fileNode = @findFileNodeFor(spec.specName)
+       @setTestStatus fileNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE
     
-    setTestFailed: (failedNode, spec) ->
-      try
-        error = {}
-        spec.children.each (block) ->
-          if block.passed == false
-            error = block.error
-        apf.xmldb.setAttribute failedNode, "errorFilePath", ide.davPrefix + error.filePath
-        apf.xmldb.setAttribute failedNode, "errorLine", error.line
-        apf.xmldb.setAttribute failedNode, "errorColumn", error.column
-        @appendBlocksFor failedNode, spec
-        @setTestStatus failedNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + error.message
-      catch error
-        console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
-      
     setTestStatus : (node, status, msg) ->
       try
         apf.xmldb.setAttribute node, "status", status
@@ -254,29 +247,35 @@ define (require, exports, module) ->
       catch error
         console.log "Caught bad error '#{error}' and didn't enjoy it. Related to the damn helper specs."
     
-    testsPassExcept: (failedTests) ->
-      passedTests = []
-      passedTests.push pass for pass in @testFiles when not failedTests.contains pass
-      @specsPass passedTests
-        
-    specsPass: (fileList) ->
-      for file in @findFileNodesFor(fileList)
-        @setTestStatus file, TEST_PASS_STATUS
-    
-    appendBlocksFor: (node, spec) ->
-      ownerDocument = node.ownerDocument
+    appendBlocksFor: (spec) ->
+      specNode = @findFileNodeFor spec.specName
+      ownerDocument = specNode.ownerDocument
       for block in spec.children
-        blockNode = ownerDocument.createElement("failed")
-        blockNode.setAttribute("name", "#{block.type}: #{block.message}")
+        blockNode = null
         if block.passed
-          @setTestStatus blockNode, TEST_PASS_STATUS
+          blockNode = @createPassedBlockNode block, ownerDocument
         else
-          @setTestStatus blockNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + block.error.message
-        node.appendChild(blockNode)
-      dataGridTestProjectJasmine.reload()
+          blockNode = @createFailedBlockNode block, ownerDocument
+        specNode.appendChild(blockNode)
+    
+    createPassedBlockNode: (block, document) ->
+      blockNode = document.createElement("passed")
+      blockNode.setAttribute("name", "#{block.type}: #{block.message}")
+      @setTestStatus blockNode, TEST_PASS_STATUS
+      blockNode
+      
+    createFailedBlockNode: (block, document) ->
+      blockNode = document.createElement("failed")
+      blockNode.setAttribute("name", "#{block.type}: #{block.message}")
+      error = block.error
+      @setTestStatus blockNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + error.message
+      apf.xmldb.setAttribute blockNode, "errorFilePath", ide.davPrefix + error.filePath
+      apf.xmldb.setAttribute blockNode, "errorLine", error.line
+      apf.xmldb.setAttribute blockNode, "errorColumn", error.column
+      blockNode
     
     resetTestStatus: ->
-      for file in @findFileNodesFor()
+      for file in @getAllFileNodes()
         @setTestStatus file, TEST_RESET_STATUS, TEST_RESET_MESSAGE
         @removeBlocksFor file
       dataGridTestProjectJasmine.reload()
@@ -285,19 +284,23 @@ define (require, exports, module) ->
       if node.children?
          node.removeChild node.firstChild while node.childNodes.length >= 1
           
-    # leaving input empty leads to return of
-    # all file nodes of the project
-    findFileNodesFor: (testFiles) ->
+    findFileNodeFor: (fileName) ->
+      console.log fileName
+      model = @getDataModel()
+      file = null
+      if fileName?
+        file = fileName.charAt(0).toLowerCase()+fileName.substring(1)
+        file = model.queryNode "//node()[@name='#{file}.spec.coffee']"
+        
+      file
+      
+    getAllFileNodes: ->
+      model = @getDataModel()
+      files = model.queryNode("repo[@name='#{@projectName}']").children
+      
+    getDataModel: ->
       model = dataGridTestProjectJasmine.$model
-      files = []
-      if testFiles?
-        for file in testFiles
-          file = file.charAt(0).toLowerCase()+file.substring(1)
-          files.push model.queryNode "//node()[@name='#{file}.spec.coffee']"
-      else
-        files = model.queryNode("repo[@name='#{@projectName}']").children
-      files
-		
+
     goToCoffee: (node) ->
       error =
         filePath: node.getAttribute 'errorFilePath'

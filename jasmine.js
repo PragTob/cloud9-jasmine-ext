@@ -192,7 +192,7 @@
         if (fileNames != null) {
           return fileNames;
         } else {
-          fileNodes = this.findFileNodesFor();
+          fileNodes = this.getAllFileNodes();
           testFiles = [];
           for (_i = 0, _len = fileNodes.length; _i < _len; _i++) {
             node = fileNodes[_i];
@@ -255,56 +255,36 @@
         console.log(parsedMessage);
         if (parsedMessage.isSyntaxError) {
           return this.handleSyntaxError();
-        } else if (parsedMessage.isAllGreen) {
-          return this.allSpecsPass();
-        } else if (parsedMessage.isFailure) {
-          return this.handleFailures(parsedMessage);
+        } else if (parsedMessage.isSpecs) {
+          return this.handleSpecs(parsedMessage);
         } else {
-          return console.log('Unknown message');
+          return console.log('unknown message');
         }
       },
       handleSyntaxError: function() {
         return console.log('Syntax error during the execution of the tests');
       },
-      allSpecsPass: function() {
-        return this.specsPass(this.testFiles);
-      },
-      handleFailures: function(parsedMessage) {
+      handleSpecs: function(parsedMessage) {
         var _this = this;
         parsedMessage.specs.each(function(spec) {
-          if (spec.passed === false) {
-            return _this.specFails(spec);
+          if (spec.passed) {
+            _this.specPasses(spec);
+          } else {
+            _this.specFails(spec);
           }
+          return _this.appendBlocksFor(spec);
         });
-        return this.testsPassExcept(parsedMessage.failedTests);
+        return dataGridTestProjectJasmine.reload();
+      },
+      specPasses: function(spec) {
+        var fileNode;
+        fileNode = this.findFileNodeFor(spec.specName);
+        return this.setTestStatus(fileNode, TEST_PASS_STATUS);
       },
       specFails: function(spec) {
-        var failedNode, _i, _len, _ref, _results;
-        _ref = this.findFileNodesFor([spec.specName]);
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          failedNode = _ref[_i];
-          _results.push(this.setTestFailed(failedNode, spec));
-        }
-        return _results;
-      },
-      setTestFailed: function(failedNode, spec) {
-        var error;
-        try {
-          error = {};
-          spec.children.each(function(block) {
-            if (block.passed === false) {
-              return error = block.error;
-            }
-          });
-          apf.xmldb.setAttribute(failedNode, "errorFilePath", ide.davPrefix + error.filePath);
-          apf.xmldb.setAttribute(failedNode, "errorLine", error.line);
-          apf.xmldb.setAttribute(failedNode, "errorColumn", error.column);
-          this.appendBlocksFor(failedNode, spec);
-          return this.setTestStatus(failedNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + error.message);
-        } catch (error) {
-          return console.log("Caught bad error '" + error + "' and didn't enjoy it. Related to the damn helper specs.");
-        }
+        var fileNode;
+        fileNode = this.findFileNodeFor(spec.specName);
+        return this.setTestStatus(fileNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE);
       },
       setTestStatus: function(node, status, msg) {
         try {
@@ -314,48 +294,45 @@
           return console.log("Caught bad error '" + error + "' and didn't enjoy it. Related to the damn helper specs.");
         }
       },
-      testsPassExcept: function(failedTests) {
-        var pass, passedTests, _i, _len, _ref;
-        passedTests = [];
-        _ref = this.testFiles;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          pass = _ref[_i];
-          if (!failedTests.contains(pass)) {
-            passedTests.push(pass);
-          }
-        }
-        return this.specsPass(passedTests);
-      },
-      specsPass: function(fileList) {
-        var file, _i, _len, _ref, _results;
-        _ref = this.findFileNodesFor(fileList);
+      appendBlocksFor: function(spec) {
+        var block, blockNode, ownerDocument, specNode, _i, _len, _ref, _results;
+        specNode = this.findFileNodeFor(spec.specName);
+        ownerDocument = specNode.ownerDocument;
+        _ref = spec.children;
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          file = _ref[_i];
-          _results.push(this.setTestStatus(file, TEST_PASS_STATUS));
+          block = _ref[_i];
+          blockNode = null;
+          if (block.passed) {
+            blockNode = this.createPassedBlockNode(block, ownerDocument);
+          } else {
+            blockNode = this.createFailedBlockNode(block, ownerDocument);
+          }
+          _results.push(specNode.appendChild(blockNode));
         }
         return _results;
       },
-      appendBlocksFor: function(node, spec) {
-        var block, blockNode, ownerDocument, _i, _len, _ref;
-        ownerDocument = node.ownerDocument;
-        _ref = spec.children;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          block = _ref[_i];
-          blockNode = ownerDocument.createElement("failed");
-          blockNode.setAttribute("name", "" + block.type + ": " + block.message);
-          if (block.passed) {
-            this.setTestStatus(blockNode, TEST_PASS_STATUS);
-          } else {
-            this.setTestStatus(blockNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + block.error.message);
-          }
-          node.appendChild(blockNode);
-        }
-        return dataGridTestProjectJasmine.reload();
+      createPassedBlockNode: function(block, document) {
+        var blockNode;
+        blockNode = document.createElement("passed");
+        blockNode.setAttribute("name", "" + block.type + ": " + block.message);
+        this.setTestStatus(blockNode, TEST_PASS_STATUS);
+        return blockNode;
+      },
+      createFailedBlockNode: function(block, document) {
+        var blockNode, error;
+        blockNode = document.createElement("failed");
+        blockNode.setAttribute("name", "" + block.type + ": " + block.message);
+        error = block.error;
+        this.setTestStatus(blockNode, TEST_ERROR_STATUS, TEST_ERROR_MESSAGE + error.message);
+        apf.xmldb.setAttribute(blockNode, "errorFilePath", ide.davPrefix + error.filePath);
+        apf.xmldb.setAttribute(blockNode, "errorLine", error.line);
+        apf.xmldb.setAttribute(blockNode, "errorColumn", error.column);
+        return blockNode;
       },
       resetTestStatus: function() {
         var file, _i, _len, _ref;
-        _ref = this.findFileNodesFor();
+        _ref = this.getAllFileNodes();
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           file = _ref[_i];
           this.setTestStatus(file, TEST_RESET_STATUS, TEST_RESET_MESSAGE);
@@ -373,20 +350,25 @@
           return _results;
         }
       },
-      findFileNodesFor: function(testFiles) {
-        var file, files, model, _i, _len;
-        model = dataGridTestProjectJasmine.$model;
-        files = [];
-        if (testFiles != null) {
-          for (_i = 0, _len = testFiles.length; _i < _len; _i++) {
-            file = testFiles[_i];
-            file = file.charAt(0).toLowerCase() + file.substring(1);
-            files.push(model.queryNode("//node()[@name='" + file + ".spec.coffee']"));
-          }
-        } else {
-          files = model.queryNode("repo[@name='" + this.projectName + "']").children;
+      findFileNodeFor: function(fileName) {
+        var file, model;
+        console.log(fileName);
+        model = this.getDataModel();
+        file = null;
+        if (fileName != null) {
+          file = fileName.charAt(0).toLowerCase() + fileName.substring(1);
+          file = model.queryNode("//node()[@name='" + file + ".spec.coffee']");
         }
-        return files;
+        return file;
+      },
+      getAllFileNodes: function() {
+        var files, model;
+        model = this.getDataModel();
+        return files = model.queryNode("repo[@name='" + this.projectName + "']").children;
+      },
+      getDataModel: function() {
+        var model;
+        return model = dataGridTestProjectJasmine.$model;
       },
       goToCoffee: function(node) {
         var error;
