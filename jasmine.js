@@ -84,6 +84,36 @@
         this.initFilelist();
         return this.addFileSaveListener();
       },
+      show: function() {
+        if ((navbar.current != null) && (navbar.current !== this)) {
+          navbar.current.disable();
+        } else {
+          return;
+        }
+        panels.initPanel(this);
+        return this.enable();
+      },
+      enable: function() {
+        return this.nodes.each(function(item) {
+          if (item.enable) {
+            return item.enable();
+          }
+        });
+      },
+      disable: function() {
+        return this.nodes.each(function(item) {
+          if (item.disable) {
+            return item.disable();
+          }
+        });
+      },
+      destroy: function() {
+        this.nodes.each(function(item) {
+          return item.destroy(true, true);
+        });
+        this.nodes = [];
+        return panels.unregister(this);
+      },
       containsRepo: function(array) {
         if (array != null) {
           return array.some(function(node) {
@@ -135,36 +165,6 @@
       },
       getProjectName: function() {
         return document.title.slice(0, document.title.indexOf('-') - 1);
-      },
-      show: function() {
-        if ((navbar.current != null) && (navbar.current !== this)) {
-          navbar.current.disable();
-        } else {
-          return;
-        }
-        panels.initPanel(this);
-        return this.enable();
-      },
-      enable: function() {
-        return this.nodes.each(function(item) {
-          if (item.enable) {
-            return item.enable();
-          }
-        });
-      },
-      disable: function() {
-        return this.nodes.each(function(item) {
-          if (item.disable) {
-            return item.disable();
-          }
-        });
-      },
-      destroy: function() {
-        this.nodes.each(function(item) {
-          return item.destroy(true, true);
-        });
-        this.nodes = [];
-        return panels.unregister(this);
       },
       getFileNameFrom: function(node) {
         var fullFileName, name;

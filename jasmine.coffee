@@ -34,6 +34,10 @@ define (require, exports, module) ->
     nodes: []
     css: css
     
+    #  ----------------------------------------  
+    # |start of standard plugin methods for c9 |
+    #  ----------------------------------------
+    
     hook: () ->
       apf.importCssString(css);
       
@@ -76,6 +80,33 @@ define (require, exports, module) ->
       @setRepoName()
       @initFilelist()
       @addFileSaveListener()
+      
+    show: ->
+      if (navbar.current?) && (navbar.current != this)
+        navbar.current.disable()
+      else
+        return
+      
+      panels.initPanel(@)
+      @enable()
+      
+    enable: ->
+      @nodes.each (item) ->
+        item.enable() if item.enable
+        
+    disable: ->
+      @nodes.each (item) ->
+        item.disable() if item.disable
+        
+    destroy: ->
+      @nodes.each (item) -> item.destroy true, true
+      @nodes = []
+      
+      panels.unregister(@)
+    
+    #  --------------------------------------  
+    # |end of standard plugin methods for c9 |
+    #  --------------------------------------
     
     # if only a folder containing specs is double clicked,
     # the selection returns null, thus if the input here
@@ -119,29 +150,6 @@ define (require, exports, module) ->
         
     # bad bad hack, Cloud9 danke.
     getProjectName: -> document.title[0...document.title.indexOf('-') - 1]
-      
-    show: ->
-      if (navbar.current?) && (navbar.current != this)
-        navbar.current.disable()
-      else
-        return
-      
-      panels.initPanel(@)
-      @enable()
-      
-    enable: ->
-      @nodes.each (item) ->
-        item.enable() if item.enable
-        
-    disable: ->
-      @nodes.each (item) ->
-        item.disable() if item.disable
-        
-    destroy: ->
-      @nodes.each (item) -> item.destroy true, true
-      @nodes = []
-      
-      panels.unregister(@)
       
     getFileNameFrom: (node) ->
       fullFileName = node.getAttribute('name')
