@@ -299,20 +299,24 @@
       appendBlocksFor: function(spec) {
         var block, blockNode, ownerDocument, specNode, _i, _len, _ref, _results;
         specNode = this.findFileNodeFor(spec.specName);
-        ownerDocument = specNode.ownerDocument;
-        _ref = spec.children;
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          block = _ref[_i];
-          blockNode = null;
-          if (block.passed) {
-            blockNode = this.createPassedBlockNode(block, ownerDocument);
-          } else {
-            blockNode = this.createFailedBlockNode(block, ownerDocument);
+        if (specNode != null) {
+          ownerDocument = specNode.ownerDocument;
+          _ref = spec.children;
+          _results = [];
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            block = _ref[_i];
+            blockNode = null;
+            if (block.passed) {
+              blockNode = this.createPassedBlockNode(block, ownerDocument);
+            } else {
+              blockNode = this.createFailedBlockNode(block, ownerDocument);
+            }
+            _results.push(specNode.appendChild(blockNode));
           }
-          _results.push(specNode.appendChild(blockNode));
+          return _results;
+        } else {
+          return console.log('A specNode was trying to be accessed, that obviously does not exist');
         }
-        return _results;
       },
       createPassedBlockNode: function(block, document) {
         var blockNode;

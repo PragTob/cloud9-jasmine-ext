@@ -27,16 +27,43 @@ class ParsedMessage
   containsSyntaxError: (message) -> message.indexOf('SyntaxError:') != -1
   
   parseTestResults: (message) ->
-    jasmineFailures = @parseFailures(message)
-    if jasmineFailures?
-      @failedTests = []
-      @isSpecs = true
-      verboseSpecs = jasmineFailures[1]
-      failureStacktraces = jasmineFailures[2]
-      @extractFailureInformation verboseSpecs, failureStacktraces
+    @failedTests = []
+    @isSpecs = true
+    failureStacktraces = @extractStackTrace message
+    # this choice avoids more complex regex and parsing problems
+    # TODO dynamically create regex?!
+    if failureStacktraces?
+      verboseSpecs = @extractVerboseSpecsFailed message
+    else
+      verboseSpecs = @extractVerboseSpecsPassed message
+    
+    console.log 'Logging for the hell of it'
+    console.log verboseSpecs
+    console.log '------------'
+    console.log failureStacktraces
+    @extractFailureInformation verboseSpecs, failureStacktraces
+    
+  extractVerboseSpecsFailed: (message) ->
+    message.match(/(.+\n\n.+\n.\[3[12]m[\s\S]*)Failures:\s/m)[1]
+    
+  extractVerboseSpecsPassed: (message) ->
+    message.match(/(.+\n\n.+\n.\[3[12]m[\s\S]*)Finished in\s/m)[1]
+    
+  extractStackTrace: (message) ->
+    stacktrace = message.match(/Failures:\s([\s\S]*)\n+Finished in/m)
+    console.log "Tracey Chapman"
+    console.log stacktrace
+    if stacktrace?
+      return stacktrace[1]
+    else
+      return null
+    
+  parseFailures: (message) ->
+    # Ulra regex - the point after \n (at the beginning) is necessary as there is a totally weird sign
+    message.match /(.+\n.\[3[12]m[\s\S]*)Failures:\s([\s\S]*)\n+Finished/m
       
   extractFailureInformation: (verboseSpecs, failureStacktraces) ->
-    @extractErrorInformation failureStacktraces
+    @extractErrorInformation failureStacktraces if failureStacktraces?
     @specs = []
     lines = verboseSpecs.split "\n"
     for line in lines
@@ -59,9 +86,11 @@ class ParsedMessage
 #    specName = @extractSpecName verboseSpecs
 #    @extractErrorInformation failureStacktraces
     
-  isItBlock: (line) -> line.indexOf(IT_BLOCK_START) != -1
+  isItBlock: (line) -> line.match /\[3\dm\s/
   
   addItBlock: (line, spec) ->
+    console.log 'add it block'
+    console.log line
     message = line.match(/\[3[12]m\s*([\s\S]+).\[0m/)[1]
     console.log 'Message:' + message
     
@@ -106,12 +135,9 @@ class ParsedMessage
   extractSpecName: (verboseSpecs) -> specName = verboseSpecs.match(/(\S+)\s/)[1]
     
     
-  parseFailures: (message) ->
-    # Ulra regex - the point after \n (at the beginning) is necessary as there is a totally weird sign
-    message.match /(.+\n.\[3[12]m[\s\S]*)Failures:\s([\s\S]*)\n+Finished/m
-    
   extractErrorInformation: (failureStacktraces) ->
     @errors = []
+    console.log failureStacktraces
     failures = failureStacktraces.split "\n\n"
     failures.each (failure) => 
       error = @parseFailure(failure)

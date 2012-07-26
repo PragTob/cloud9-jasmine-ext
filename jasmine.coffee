@@ -259,14 +259,17 @@ define (require, exports, module) ->
     
     appendBlocksFor: (spec) ->
       specNode = @findFileNodeFor spec.specName
-      ownerDocument = specNode.ownerDocument
-      for block in spec.children
-        blockNode = null
-        if block.passed
-          blockNode = @createPassedBlockNode block, ownerDocument
-        else
-          blockNode = @createFailedBlockNode block, ownerDocument
-        specNode.appendChild(blockNode)
+      if specNode?
+        ownerDocument = specNode.ownerDocument
+        for block in spec.children
+          blockNode = null
+          if block.passed
+            blockNode = @createPassedBlockNode block, ownerDocument
+          else
+            blockNode = @createFailedBlockNode block, ownerDocument
+          specNode.appendChild(blockNode)
+      else
+        console.log 'A specNode was trying to be accessed, that obviously does not exist'
     
     createPassedBlockNode: (block, document) ->
       blockNode = document.createElement("passed")
