@@ -13,7 +13,8 @@ define (require, exports, module) ->
 
   DIVIDER_POSITION = 2300
   MENU_ENTRY_POSITION = 2400
-  PANEL_POSITION = 10000
+  PANEL_POSITION = 4000
+  DEFAULT_WIDTH = 300
   PATH_TO_JASMINE = 'node_modules/jasmine-node/lib/jasmine-node/cli.js'
   
   TEST_PASS_STATUS = 1
@@ -33,6 +34,7 @@ define (require, exports, module) ->
     markup: markup
     nodes: []
     css: css
+    defaultWidth: DEFAULT_WIDTH
     
     #  ----------------------------------------  
     # |start of standard plugin methods for c9 |

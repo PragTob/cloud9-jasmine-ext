@@ -2,7 +2,7 @@
 (function() {
 
   define(function(require, exports, module) {
-    var DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, PATH_TO_JASMINE, ParsedMessage, TEST_ERROR_MESSAGE, TEST_ERROR_STATUS, TEST_PASS_STATUS, TEST_RESET_MESSAGE, TEST_RESET_STATUS, commands, css, ext, filelist, fs, ide, markup, menus, noderunner, panels;
+    var DEFAULT_WIDTH, DIVIDER_POSITION, MENU_ENTRY_POSITION, PANEL_POSITION, PATH_TO_JASMINE, ParsedMessage, TEST_ERROR_MESSAGE, TEST_ERROR_STATUS, TEST_PASS_STATUS, TEST_RESET_MESSAGE, TEST_RESET_STATUS, commands, css, ext, filelist, fs, ide, markup, menus, noderunner, panels;
     ide = require('core/ide');
     ext = require('core/ext');
     menus = require('ext/menus/menus');
@@ -16,7 +16,8 @@
     ParsedMessage = require('ext/jasmine/lib/parsedMessage').ParsedMessage;
     DIVIDER_POSITION = 2300;
     MENU_ENTRY_POSITION = 2400;
-    PANEL_POSITION = 10000;
+    PANEL_POSITION = 4000;
+    DEFAULT_WIDTH = 300;
     PATH_TO_JASMINE = 'node_modules/jasmine-node/lib/jasmine-node/cli.js';
     TEST_PASS_STATUS = 1;
     TEST_ERROR_STATUS = 0;
@@ -37,6 +38,7 @@
       markup: markup,
       nodes: [],
       css: css,
+      defaultWidth: DEFAULT_WIDTH,
       hook: function() {
         var _self;
         apf.importCssString(css);
