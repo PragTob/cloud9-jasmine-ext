@@ -387,7 +387,8 @@
           doc: ide.createDocument(require("ext/filesystem/filesystem").createFileNodeFromPath(error.filePath))
         });
         return ide.dispatchEvent('livecoffee_show_file', {
-          line: error.line
+          line: error.line,
+          showJS: showLiveCoffeeOutputForJasmine.checked
         });
       },
       jasmine: function() {

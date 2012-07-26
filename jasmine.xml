@@ -12,6 +12,7 @@
       optimize = "true">
         <a:bar skin="c9-header-bar" top="-30" right="28" height="30">
             <a:hbox id="barTestToolsJasmine" class="testPanelControls">
+                <a:checkbox id="showLiveCoffeeOutputForJasmine">show translated JS</a:checkbox>
                 <a:button 
                   id="buttonTestRunJasmine"
                   caption  = "Run tests"

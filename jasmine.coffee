@@ -320,6 +320,6 @@ define (require, exports, module) ->
         line:    node.getAttribute 'errorLine'
         column:  node.getAttribute 'errorColumn'
       ide.dispatchEvent('openfile', {doc: ide.createDocument(require("ext/filesystem/filesystem").createFileNodeFromPath(error.filePath))})
-      ide.dispatchEvent('livecoffee_show_file', {line: error.line})
+      ide.dispatchEvent('livecoffee_show_file', {line: error.line, showJS: showLiveCoffeeOutputForJasmine.checked})
 
     jasmine: -> @runJasmine()
