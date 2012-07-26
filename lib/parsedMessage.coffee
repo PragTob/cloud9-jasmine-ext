@@ -37,10 +37,6 @@ class ParsedMessage
     else
       verboseSpecs = @extractVerboseSpecsPassed message
     
-    console.log 'Logging for the hell of it'
-    console.log verboseSpecs
-    console.log '------------'
-    console.log failureStacktraces
     @extractFailureInformation verboseSpecs, failureStacktraces
     
   extractVerboseSpecsFailed: (message) ->
@@ -51,8 +47,6 @@ class ParsedMessage
     
   extractStackTrace: (message) ->
     stacktrace = message.match(/Failures:\s([\s\S]*)\n+Finished in/m)
-    console.log "Tracey Chapman"
-    console.log stacktrace
     if stacktrace?
       return stacktrace[1]
     else
@@ -68,7 +62,6 @@ class ParsedMessage
     lines = verboseSpecs.split "\n"
     @parseSpecLine line for line in lines
     @sanitizeSpecs
-    console.log @specs
     
   parseSpecLine: (line) ->
     if match = line.match /^(\w+)/
@@ -89,10 +82,7 @@ class ParsedMessage
   isItBlock: (line) -> line.match /\[3\dm\s/
   
   addItBlock: (line, spec) ->
-    console.log 'add it block'
-    console.log line
     message = line.match(/\[3[12]m\s*([\s\S]+).\[0m/)[1]
-    console.log 'Message:' + message
     
     if @isPassedSpec line
       passed = true
@@ -124,7 +114,7 @@ class ParsedMessage
     line.indexOf(IT_BLOCK_START + PASSED_IT_BLOCK) != -1
       
   extractBlockInformation: (verboseSpecs) ->
-    console.log verboseSpecs
+    console.log 'ignoring blocks for now'
     null
     
   # convention: the first name in the first describe block is the name of the 
@@ -137,7 +127,6 @@ class ParsedMessage
     
   extractErrorInformation: (failureStacktraces) ->
     @errors = []
-    console.log failureStacktraces
     failures = failureStacktraces.split "\n\n"
     failures.each (failure) => 
       error = @parseFailure(failure)
@@ -165,8 +154,7 @@ class ParsedMessage
     error
     
   parseTrace: (trace) ->
-    errorLine = trace.match(new RegExp(@projectName + '(.+)'))[1]
-    errorLine[0...-1] # remove the last character - \) didn't seem to work in the RegEx
+    errorLine = trace.match(new RegExp(@projectName + '(.+).'))[1]
     
   parseError: (errorLine) ->
     errorParts = errorLine.split ':'

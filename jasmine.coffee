@@ -298,7 +298,6 @@ define (require, exports, module) ->
          node.removeChild node.firstChild while node.childNodes.length >= 1
           
     findFileNodeFor: (fileName) ->
-      console.log fileName
       model = @getDataModel()
       file = null
       if fileName?

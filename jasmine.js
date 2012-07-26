@@ -358,7 +358,6 @@
       },
       findFileNodeFor: function(fileName) {
         var file, model;
-        console.log(fileName);
         model = this.getDataModel();
         file = null;
         if (fileName != null) {
