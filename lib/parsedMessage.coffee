@@ -66,26 +66,26 @@ class ParsedMessage
     @extractErrorInformation failureStacktraces if failureStacktraces?
     @specs = []
     lines = verboseSpecs.split "\n"
-    for line in lines
-      if match = line.match /^(\w+)/
-        specName = match[1]
-        spec =
-          specName: specName
-          children: []
-          passed: true
-        @specs.push spec
-      else
-        if @isItBlock line
-          @addItBlock line, spec
-        else
-          @addDescribeBlock line, spec
+    @parseSpecLine line for line in lines
+    @sanitizeSpecs
     console.log @specs
-        
-#    specs = verboseSpecs.split /^\w+/m
-#    console.log specs
-#    specName = @extractSpecName verboseSpecs
-#    @extractErrorInformation failureStacktraces
     
+  parseSpecLine: (line) ->
+    if match = line.match /^(\w+)/
+      specName = match[1]
+      spec =
+        specName: specName
+        children: []
+        passed: true
+      @specs.push spec
+    else
+      if @isItBlock line
+        @addItBlock line, @currentSpec()
+      else
+        @addDescribeBlock line, @currentSpec()
+        
+  currentSpec: -> @specs[@specs.length - 1]
+        
   isItBlock: (line) -> line.match /\[3\dm\s/
   
   addItBlock: (line, spec) ->
@@ -184,8 +184,13 @@ class ParsedMessage
   sanitizeErrorMessage: (message) ->
     matches = message.match /\[31m(.+)\[\d+m/
     matches[1]
-    
   
+  # specs without children are not worthy
+  sanitizeSpecs: ->
+    cleanSpecs = []
+    @specs.each (spec) -> 
+      cleanSpecs.push spec if spec.children.length > 0
+    @specs = cleanSpecs
 
 define (require, exports, module) ->
   exports.ParsedMessage = ParsedMessage
