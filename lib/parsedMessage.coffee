@@ -36,14 +36,12 @@ class ParsedMessage
       verboseSpecs = @extractVerboseSpecsFailed message
     else
       verboseSpecs = @extractVerboseSpecsPassed message
-    console.log verboseSpecs
     @extractFailureInformation verboseSpecs, failureStacktraces
     
   extractVerboseSpecsFailed: (message) ->
     message.match(/([\s\S]*)Failures:\s/m)[1]
     
   extractVerboseSpecsPassed: (message) ->
-    console.log message
     message.match(/([\s\S]*)Finished in\s/m)[1]
     
   extractStackTrace: (message) ->
@@ -62,12 +60,10 @@ class ParsedMessage
     @specs = []
     lines = verboseSpecs.split "\n"
     @parseSpecLine line for line in lines
-    @sanitizeSpecs
+    @sanitizeSpecs()
     
   parseSpecLine: (line) ->
-    console.log line
     if match = line.match /^(\w+)/
-      console.log 'spec'
       specName = match[1]
       spec =
         specName: specName
@@ -76,7 +72,6 @@ class ParsedMessage
       @specs.push spec
     else
       if @isItBlock line
-        console.log 'it'
         @addItBlock line, @currentSpec()
       else
         @addDescribeBlock line, @currentSpec()
@@ -177,7 +172,8 @@ class ParsedMessage
     matches = message.match /\[31m(.+)\[\d+m/
     matches[1]
   
-  # specs without children are not worthy
+  # specs without children are not worthy (probably console.log's.. hard to
+  # distinguish unfortunately)
   sanitizeSpecs: ->
     cleanSpecs = []
     @specs.each (spec) -> 
