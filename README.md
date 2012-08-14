@@ -1,7 +1,7 @@
 Jasmine Test Panel for Cloud9
 ==================
 
-The Jasmine Test Panel for Cloud9 is aimed at making testing with Jasmine and CoffeeScript easier in the [Cloud9](c9.io) IDE. It provides a test panel from which tests can be executed.
+The Jasmine Test Panel for Cloud9 is aimed at making testing with Jasmine and CoffeeScript easier in the [Cloud9](c9.io) IDE. It provides a test panel from which tests can be executed. You can find a screencast of the project [here](http://www.youtube.com/watch?v=Iy49Ho1z-PQ&feature=plcp).
 
 Installation
 ------------
